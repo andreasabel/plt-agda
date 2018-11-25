@@ -1,6 +1,6 @@
 module TypeChecker where
 
-open import Data.String using (_≟_)
+open import Data.String.Unsafe using (_≟_)
 
 open import Library
 open AssocList
