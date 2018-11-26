@@ -15,13 +15,15 @@ module FlowChart (Σ : Sig) where
 -- A label represents the code after it,
 -- starting in scope Γ and ending in scope Γ'.
 
+infix 10 _⇛_
+
 record LabelType : Set where
   constructor _⇛_
   field Γ Γ' : Cxt
 
 Labels = List LabelType
 
-wk1 : ∀{lt : LabelType} {Λ} → Λ ⊆ (lt ∷ Λ)
+wk1 : ∀{lt : LabelType} {Λ} → Λ ⊆ lt ∷ Λ
 wk1 = ⊆-skip ⊆-refl
 
 □ : (F : Labels → Set) → Labels → Set
@@ -44,26 +46,32 @@ module _ (Ret Cond Eff : Cxt → Set) where
     fcGoto   : ∀{Γ Γ'} (l : (Γ ⇛ Γ') ∈ Λ) → FC Λ Γ Γ'  -- goto join point
     fcReturn : ∀{Γ Γ'} (r : Ret Γ) → FC Λ Γ Γ'      -- return from function
     -- Branching:
-    fcIfElse : ∀{Γ} (c : Cond Γ) (fc fc' : FC Λ Γ Γ) → FC Λ Γ Γ
+    fcIfElse : ∀{Γ Γ'} (c : Cond Γ) (fc fc' : FC Λ Γ Γ') → FC Λ Γ Γ'
     -- Label definition
-    fcLet    : ∀{Γ Γ' Γ₁ Γ₂} (fc : FC Λ Γ₁ Γ₂) (fc' : FC ((Γ₁ ⇛ Γ₂) ∷ Λ) Γ Γ') → FC Λ Γ Γ'
+    fcLet    : ∀{Γ Γ' Γ₁ Γ₂} (fc  : FC Λ Γ₁ Γ₂)
+                             (fc' : FC ((Γ₁ ⇛ Γ₂) ∷ Λ) Γ Γ') → FC Λ Γ Γ'
     fcFix    : ∀{Γ Γ'} (fc : FC ((Γ ⇛ Γ') ∷ Λ) Γ Γ') → FC Λ Γ Γ'
     -- Cons-like:
     -- Scope
-    fcNewBlock : ∀{Γ Γ'} (fc : FC Λ ([] ∷⁺ Γ) Γ') → FC Λ Γ Γ'
+    fcNewBlock : ∀{Γ Γ'}   (fc : FC Λ ([] ∷⁺ Γ) Γ') → FC Λ Γ Γ'
     fcPopBlock : ∀{Γ Γ' Δ} (fc : FC Λ Γ Γ') → FC Λ (Δ ∷⁺ Γ) Γ'
-    fcDecl     : ∀{Γ Γ'} {t : Ty} (fc : FC Λ (Γ ▷ just t) Γ') → FC Λ Γ Γ'
+    fcDecl     : ∀{Γ Γ' t} (fc : FC Λ (Γ ▷ just t) Γ') → FC Λ Γ Γ'
     -- Instruction
     fcExec     : ∀{Γ Γ'} (e : Eff Γ) (fc : FC Λ Γ Γ') → FC Λ Γ Γ'
 
   FC' : (Γ Γ' : Cxt) (Λ : Labels) → Set
   FC' Γ Γ' Λ = FC Λ Γ Γ'
 
-  continueAtNewLabel :  ∀{Λ Γ Γ' Γ₁ Γ₂}
+  _newLabel :  ∀{Λ Γ Γ' Γ₁ Γ₂}
     → (f : □ (□ (FC' Γ₁ Γ₂) →̇ FC' Γ Γ') Λ)
     → FC ((Γ₁ ⇛ Γ₂) ∷ Λ) Γ Γ'
-  continueAtNewLabel f =
-    f wk1 λ ρ → fcGoto (weakLabel ρ (here refl))
+  _newLabel f = f wk1 λ ρ → fcGoto (weakLabel ρ (here refl))
+
+  -- continueAtNewLabel :  ∀{Λ Γ Γ' Γ₁ Γ₂}
+  --   → (f : □ (□ (FC' Γ₁ Γ₂) →̇ FC' Γ Γ') Λ)
+  --   → FC ((Γ₁ ⇛ Γ₂) ∷ Λ) Γ Γ'
+  -- continueAtNewLabel f =
+  --   f wk1 λ ρ → fcGoto (weakLabel ρ (here refl))
 
   joinPoint : ∀{Λ Γ Γ' Γ₁ Γ₂}
     → (k : □ (FC' Γ₁ Γ₂) Λ)
@@ -71,12 +79,14 @@ module _ (Ret Cond Eff : Cxt → Set) where
     → FC Λ Γ Γ'
   joinPoint k f = case k ⊆-refl of λ where
     (fcGoto _) → f ⊆-refl k
-    k'         → fcLet k' $ continueAtNewLabel f
+    k'         → fcLet k' $ f newLabel
+    -- k'         → fcLet k' $ continueAtNewLabel f
 
   fix : ∀{Γ Γ' Λ}
     → (f : □ (□ (FC' Γ Γ') →̇ FC' Γ Γ') Λ)
     → FC Λ Γ Γ'
-  fix f = fcFix $ continueAtNewLabel f
+  fix f = fcFix $ f newLabel
+  -- fix f = fcFix $ continueAtNewLabel f
 
   module CompileStm where
    mutual
@@ -111,15 +121,19 @@ module _ (Ret Cond Eff : Cxt → Set) where
       compileIf e (compileStm s  ∘ (k' ∙_))
                   (compileStm s' ∘ (k' ∙_))
 
+    -- Compiling statements
+
     compileStms : ∀{rt Γ Δ Δ' Γ'}
       (ss : Stms Σ rt Γ Δ Δ') {Λ}
-      (k : ∀{Λ'} (ρ : Λ ⊆ Λ') → FC Λ' (Δ' ∷ Γ) Γ')
+      (k : □ (FC' (Δ' ∷ Γ) Γ') Λ)
       → FC Λ (Δ ∷ Γ) Γ'
     compileStms []       k = k ⊆-refl
     compileStms (s ∷ ss) k =
       compileStm  s  λ ρ →
       compileStms ss λ ρ' →
       k (⊆-trans ρ ρ')
+
+    -- Compiling conditionals
 
     compileIf : ∀{Γ Γ'}
       (e : Exp` Σ Γ bool) {Λ}
@@ -143,9 +157,9 @@ module _ (Ret Cond Eff : Cxt → Set) where
     compileIf (eOp (cmp op) e e') kt kf = {!!}
 
     -- General boolean expressions:
-    compileIf (eVar x) kt kf = {!!}
+    compileIf (eVar x)    kt kf = {!!}
     compileIf (eApp f es) kt kf = {!!}
-    compileIf (eAss x e) kt kf = {!!}
+    compileIf (eAss x e)  kt kf = {!!}
 
     -- Impossible cases:
     compileIf (eBuiltin () es) kt kf
