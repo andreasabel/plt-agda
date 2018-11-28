@@ -39,6 +39,32 @@ F →̇ G = λ Λ → F Λ → G Λ
 _∙_ : ∀{F Λ} (k : □ F Λ) → □ (□ F) Λ
 k ∙ ρ = λ ρ' → k (⊆-trans ρ ρ')
 
+-- Control-free instructions:
+--
+-- * No jumps.
+-- * Can mutate local variables but not create them.
+-- * Can manipulate the stack
+
+ST = Block
+
+module _ (Σ : Sig) where
+  data SI (Γ : Cxt) : (Φ Ψ : ST) → Set where
+    store  : ∀{Φ t} (x : Var Γ t) → SI Γ (t ∷ Φ) Φ
+    load   : ∀{Φ t} (x : Var Γ t) → SI Γ Φ (t ∷ Φ)
+    iconst : ∀{Φ} (i : ℤ) → SI Γ Φ (int ∷ Φ)
+    dconst : ∀{Φ} (d : Float) → SI Γ Φ (double ∷ Φ)
+    dup    : ∀{Φ t} → SI Γ (t ∷ Φ) (t ∷ t ∷ Φ)
+    pop    : ∀{Φ t} → SI Γ (t ∷ Φ) Φ
+    -- callProc : ∀{Φ Δ}   (f : funType Δ void ∈ Σ) → SI Γ (Δ ++ Φ) Φ
+    -- callFun  : ∀{Φ Δ t} (f : funType Δ (` t) ∈ Σ) → SI Γ (Δ ++ Φ) (t ∷ Φ)
+    call  : ∀{Φ Δ rt} (f : funType Δ rt ∈ Σ) → SI Γ (Δ ++ Φ) (Φ ▷ᵗ rt)
+    dcmp  : ∀{Φ} → SI Γ (double ∷ double ∷ Φ) (int ∷ Φ)
+    arith : ∀{Φ t} (op : ArithOp t) → SI Γ (t ∷ t ∷ Φ) (t ∷ Φ)
+    -- -- Embed some flow chart with local jumps
+    -- box   : FC [] Γ SI  -- This would require and ending context as well.
+
+
+-- Control
 
 module _ (Ret Cond Eff : Cxt → Set) where
 
@@ -153,3 +179,10 @@ module _ (Ret Cond Eff : Cxt → Set) where
     compileIf (eOp (arith (minus ())) e e') kt kf
     compileIf (eOp (arith (times ())) e e') kt kf
     compileIf (eOp (arith (div ())) e e') kt kf
+
+-- -}
+-- -}
+-- -}
+-- -}
+-- -}
+-- -}
