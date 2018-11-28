@@ -45,6 +45,12 @@ record Var⁻ (Γ : Cxt⁻) (t : Ty) :  Set where
 Var : (Γ : Cxt) (t : Ty) → Set
 Var Γ t = Var⁻ (List⁺.toList Γ) t
 
+-- Block extension
+
+_▷ᵗ_ : Block → Type → Block
+Δ ▷ᵗ void = Δ
+Δ ▷ᵗ ` t  = t ∷ Δ
+
 -- Context extensions.
 
 CxtExt = Maybe Ty
