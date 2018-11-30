@@ -22,7 +22,12 @@ record LabelType' : Set where
   constructor _⇛_
   field Γ Γ' : Cxt
 
-LabelType = Cxt
+-- Stack type
+ST = Block
+
+-- Machine state type
+MT = Cxt × ST
+LabelType = MT
 Labels = List LabelType
 
 wk1 : ∀{lt : LabelType} {Λ} → Λ ⊆ lt ∷ Λ
@@ -39,8 +44,6 @@ F →̇ G = λ Λ → F Λ → G Λ
 
 _∙_ : ∀{F Λ} (k : □ F Λ) → □ (□ F) Λ
 k ∙ ρ = λ ρ' → k (⊆-trans ρ ρ')
-
-ST = Block
 
 -- Stack-only instructions
 
@@ -61,27 +64,26 @@ data StoreI (Γ : Cxt) : (Φ Φ' : ST) → Set where
   load   : ∀{Φ t} (x : Var Γ t) → StoreI Γ Φ (t ∷ Φ)
   incDec : ∀{Φ} (b : IncDec) (x : Var Γ int) → StoreI Γ Φ Φ
 
--- Control-free instructions:
+-- -- Control-free instructions:
+-- --
+-- -- * No jumps.
+-- -- * Can mutate local variables but not create them.
+-- -- * Can manipulate the stack
 --
--- * No jumps.
--- * Can mutate local variables but not create them.
--- * Can manipulate the stack
-
-module _ (Σ : Sig) where
-  data SI (Γ : Cxt) : (Φ Φ' : ST) → Set where
-    store  : ∀{Φ t} (x : Var Γ t) → SI Γ (t ∷ Φ) Φ
-    load   : ∀{Φ t} (x : Var Γ t) → SI Γ Φ (t ∷ Φ)
-    iconst : ∀{Φ} (i : ℤ) → SI Γ Φ (int ∷ Φ)
-    dconst : ∀{Φ} (d : Float) → SI Γ Φ (double ∷ Φ)
-    dup    : ∀{Φ t} → SI Γ (t ∷ Φ) (t ∷ t ∷ Φ)
-    pop    : ∀{Φ t} → SI Γ (t ∷ Φ) Φ
-    -- callProc : ∀{Φ Δ}   (f : funType Δ void ∈ Σ) → SI Γ (Δ ++ Φ) Φ
-    -- callFun  : ∀{Φ Δ t} (f : funType Δ (` t) ∈ Σ) → SI Γ (Δ ++ Φ) (t ∷ Φ)
-    call  : ∀{Φ Δ rt} (f : funType Δ rt ∈ Σ) → SI Γ (Δ ++ Φ) (Φ ▷ᵗ rt)
-    dcmp  : ∀{Φ} → SI Γ (double ∷ double ∷ Φ) (int ∷ Φ)
-    arith : ∀{Φ t} (op : ArithOp t) → SI Γ (t ∷ t ∷ Φ) (t ∷ Φ)
-    -- -- Embed some flow chart with local jumps
-    -- box   : FC [] Γ SI  -- This would require and ending context as well.
+-- data SI (Γ : Cxt) : (Φ Φ' : ST) → Set where
+--   store  : ∀{Φ t} (x : Var Γ t) → SI Γ (t ∷ Φ) Φ
+--   load   : ∀{Φ t} (x : Var Γ t) → SI Γ Φ (t ∷ Φ)
+--   iconst : ∀{Φ} (i : ℤ) → SI Γ Φ (int ∷ Φ)
+--   dconst : ∀{Φ} (d : Float) → SI Γ Φ (double ∷ Φ)
+--   dup    : ∀{Φ t} → SI Γ (t ∷ Φ) (t ∷ t ∷ Φ)
+--   pop    : ∀{Φ t} → SI Γ (t ∷ Φ) Φ
+--   -- callProc : ∀{Φ Δ}   (f : funType Δ void ∈ Σ) → SI Γ (Δ ++ Φ) Φ
+--   -- callFun  : ∀{Φ Δ t} (f : funType Δ (` t) ∈ Σ) → SI Γ (Δ ++ Φ) (t ∷ Φ)
+--   call  : ∀{Φ Δ rt} (f : funType Δ rt ∈ Σ) → SI Γ (Δ ++ Φ) (Φ ▷ᵗ rt)
+--   dcmp  : ∀{Φ} → SI Γ (double ∷ double ∷ Φ) (int ∷ Φ)
+--   arith : ∀{Φ t} (op : ArithOp t) → SI Γ (t ∷ t ∷ Φ) (t ∷ Φ)
+--   -- -- Embed some flow chart with local jumps
+--   -- box   : FC [] Γ SI  -- This would require and ending context as well.
 
 -- Scope-manipulating instructions
 -- * Create and destroy local variables
@@ -98,55 +100,77 @@ data Cond : (Φ Φ' : ST) → Set where
   eqBool : ∀{Φ}   (b : Bool)      → Cond (bool ∷ Φ)  Φ
   eqZero : ∀{Φ}   (b : Bool)      → Cond (int ∷ Φ)   Φ
 
+-- Single jump-free instruction
+
+data JF : (Ξ Ξ' : MT) → Set where
+  stackI : ∀{Γ Φ Φ'} (j : StackI Φ Φ') → JF (Γ , Φ) (Γ , Φ')
+  storeI : ∀{Γ Φ Φ'} (j : StoreI Γ Φ Φ') → JF (Γ , Φ) (Γ , Φ')
+  scopeI : ∀{Γ Γ' Φ} (adm : AdmScope Γ Γ') → JF (Γ , Φ) (Γ' , Φ)
+  call   : ∀{Γ Φ Δ rt} (f : funType Δ rt ∈ Σ) → JF (Γ , Δ ++ Φ) (Γ , Φ ▷ᵗ rt)
+
+-- module _ (Σ : Sig) where
+--   data JF : (Γ Γ' : Cxt) (Φ Φ' : ST) → Set where
+--     stackI : ∀{Γ Φ Φ'} (j : StackI Φ Φ') → JF Γ Γ Φ Φ'
+--     storeI : ∀{Γ Φ Φ'} (j : StoreI Γ Φ Φ') → JF Γ Γ Φ Φ'
+--     scopeI : ∀{Γ Γ' Φ} (adm : AdmScope Γ Γ') → JF Γ Γ' Φ Φ
+--     call   : ∀{Γ Φ Δ rt} (f : funType Δ rt ∈ Σ) → JF Γ Γ (Δ ++ Φ) (Φ ▷ᵗ rt)
+
 -- Control
 
-module _ (Ret Cond Eff : Cxt → Set) where
+-- Ξ is machine state type when starting to run fc
+data FC (Λ : Labels) : (Ξ : MT) → Set where
+  -- Ends:
+  fcGoto   : ∀{Ξ} (l : Ξ ∈ Λ) → FC Λ Ξ           -- goto join point (same Ξ)
+  fcReturn : ∀{Γ Φ} t         → FC Λ (Γ , t ∷ Φ) -- return from function
+  -- Branching:
+  fcIfElse : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (fc fc' : FC Λ (Γ , Φ')) → FC Λ (Γ , Φ)
+  -- Label definition
+  fcLet    : ∀{Ξ Ξ'} (fc  : FC Λ Ξ') (fc' : FC (Ξ' ∷ Λ) Ξ) → FC Λ Ξ
+  fcFix    : ∀{Ξ} (fc : FC (Ξ ∷ Λ) Ξ) → FC Λ Ξ
+  -- Cons-like: Instruction
+  fcExec     : ∀{Ξ Ξ'} (j : JF Ξ Ξ') (fc : FC Λ Ξ') → FC Λ Ξ
 
-  data FC (Λ : Labels) : (Γ : Cxt) → Set where
-    -- Ends:
-    fcGoto   : ∀{Γ} (l : Γ ∈ Λ) → FC Λ Γ  -- goto join point
-    fcReturn : ∀{Γ} (r : Ret Γ) → FC Λ Γ  -- return from function
-    -- Branching:
-    fcIfElse : ∀{Γ} (c : Cond Γ) (fc fc' : FC Λ Γ) → FC Λ Γ
-    -- Label definition
-    fcLet    : ∀{Γ Γ₁} (fc  : FC Λ Γ₁) (fc' : FC (Γ₁ ∷ Λ) Γ) → FC Λ Γ
-    fcFix    : ∀{Γ} (fc : FC (Γ ∷ Λ) Γ) → FC Λ Γ
-    -- Cons-like:
-    -- Scope
-    fcAdm      : ∀{Γ Γ'}(adm : AdmScope Γ Γ') (fc : FC Λ Γ') → FC Λ Γ
-    -- fcNewBlock : ∀{Γ}   (fc : FC Λ ([] ∷⁺ Γ)) → FC Λ Γ
-    -- fcPopBlock : ∀{Γ Δ} (fc : FC Λ Γ) → FC Λ (Δ ∷⁺ Γ)
-    -- fcDecl     : ∀{Γ} t (fc : FC Λ (Γ ▷ just t)) → FC Λ Γ
-    -- Instruction
-    fcExec     : ∀{Γ} (e : Eff Γ) (fc : FC Λ Γ) → FC Λ Γ
-
+  -- Scope
+  -- fcAdm      : ∀{Γ Γ'}(adm : AdmScope Γ Γ') (fc : FC Λ Γ') → FC Λ Γ
   -- fcNewBlock : ∀{Γ}   (fc : FC Λ ([] ∷⁺ Γ)) → FC Λ Γ
-  pattern fcNewBlock fc = fcAdm newBlock fc
   -- fcPopBlock : ∀{Γ Δ} (fc : FC Λ Γ) → FC Λ (Δ ∷⁺ Γ)
-  pattern fcPopBlock fc = fcAdm popBlock fc
   -- fcDecl     : ∀{Γ} t (fc : FC Λ (Γ ▷ just t)) → FC Λ Γ
-  pattern fcDecl t   fc = fcAdm (decl t) fc
+  -- Instruction
+  -- fcExec     : ∀{Ξ Ξ'} (j : JF Ξ Ξ') (fc : FC Λ Ξ') → FC Λ Ξ
+  -- fcExec     : ∀{Γ} (j : JF Γ Γ' Φ Φ' ) (fc : FC Λ Γ) → FC Λ Γ
+  -- fcExec     : ∀{Γ} (e : Eff Γ) (fc : FC Λ Γ) → FC Λ Γ
 
-  FC' : (Γ : Cxt) (Λ : Labels) → Set
-  FC' Γ Λ = FC Λ Γ
+-- fcAdm : ∀{Γ Γ' Φ}(adm : ScopeI Γ Γ') (fc : FC Λ (Γ', Φ)) → FC Λ (Γ , Φ)
+pattern fcAdm j fc = fcExec (scopeI j) fc
+-- fcNewBlock : ∀{Γ}   (fc : FC Λ ([] ∷⁺ Γ)) → FC Λ Γ
+pattern fcNewBlock fc = fcAdm newBlock fc
+-- fcPopBlock : ∀{Γ Δ} (fc : FC Λ Γ) → FC Λ (Δ ∷⁺ Γ)
+pattern fcPopBlock fc = fcAdm popBlock fc
+-- fcDecl     : ∀{Γ} t (fc : FC Λ (Γ ▷ just t)) → FC Λ Γ
+pattern fcDecl t   fc = fcAdm (decl t) fc
 
-  _newLabel :  ∀{Λ Γ Γ₁}
-    → (f : □ (□ (FC' Γ₁) →̇ FC' Γ) Λ)
-    → FC (Γ₁ ∷ Λ) Γ
-  _newLabel f = f wk1 λ ρ → fcGoto (weakLabel ρ (here refl))
+FC' : (Ξ : MT) (Λ : Labels) → Set
+FC' Ξ Λ = FC Λ Ξ
 
-  joinPoint : ∀{Λ Γ Γ₁}
-    → (k : □ (FC' Γ₁) Λ)
-    → (f : □ (□ (FC' Γ₁) →̇ FC' Γ) Λ)
-    → FC Λ Γ
-  joinPoint k f = case k ⊆-refl of λ where
-    (fcGoto _) → f ⊆-refl k
-    k'         → fcLet k' $ f newLabel
+_newLabel :  ∀{Λ Ξ Ξ'}
+  → (f : □ (□ (FC' Ξ') →̇ FC' Ξ) Λ)
+  → FC (Ξ' ∷ Λ) Ξ
+_newLabel f = f wk1 λ ρ → fcGoto (weakLabel ρ (here refl))
 
-  fix : ∀{Γ Λ}
-    → (f : □ (□ (FC' Γ) →̇ FC' Γ) Λ)
-    → FC Λ Γ
-  fix f = fcFix $ f newLabel
+joinPoint : ∀{Λ Ξ Ξ'}
+  → (k : □ (FC' Ξ') Λ)
+  → (f : □ (□ (FC' Ξ') →̇ FC' Ξ) Λ)
+  → FC Λ Ξ
+joinPoint k f = case k ⊆-refl of λ where
+  (fcGoto _) → f ⊆-refl k
+  k'         → fcLet k' $ f newLabel
+
+fix : ∀{Ξ Λ}
+  → (f : □ (□ (FC' Ξ) →̇ FC' Ξ) Λ)
+  → FC Λ Ξ
+fix f = fcFix $ f newLabel
+
+{-
 
   module CompileStm where
    mutual
