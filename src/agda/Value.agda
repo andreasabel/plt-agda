@@ -50,3 +50,12 @@ printVal` bool   b = printBool b
 printVal : ∀ t → Val t → String
 printVal (` t)  v = printVal` t v
 printVal void   _ = "undefined"
+
+defaultVal` : ∀ t → Val` t
+defaultVal` int    = + 0
+defaultVal` double = 0.0
+defaultVal` bool   = false
+
+defaultVal : ∀ t → Val t
+defaultVal (` t) = defaultVal` t
+defaultVal void  = _
