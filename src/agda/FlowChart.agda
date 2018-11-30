@@ -48,7 +48,7 @@ k ∙ ρ = λ ρ' → k (⊆-trans ρ ρ')
 -- Stack-only instructions
 
 data StackI : (Φ Φ' : ST) → Set where
-  const : ∀{Φ} (t : Ty) (c : Val` t) → StackI Φ (t ∷ Φ)
+  const : ∀{Φ t} (c : Val` t) → StackI Φ (t ∷ Φ)
   dup   : ∀{Φ t} → StackI (t ∷ Φ) (t ∷ t ∷ Φ)
   pop   : ∀{Φ t} → StackI (Φ ▷ᵗ t) Φ
   dcmp  : ∀{Φ} → StackI (double ∷ double ∷ Φ) (int ∷ Φ)
@@ -151,7 +151,9 @@ module Compile (rt : Type) where
   -- fcDecl     : ∀{Γ t} (fc : FC Λ (Γ ▷ just t)) → FC Λ Γ
   pattern fcDecl fc = fcAdm decl fc
 
-  pattern fcPop fc = fcExec (stackI pop) fc
+  pattern fcSI j fc = fcExec (stackI j) fc
+  pattern fcConst v fc = fcSI (const v) fc
+  pattern fcPop fc = fcSI pop fc
   pattern fcAssign x fc = fcExec (storeI (store x)) fc
 
   FC' : (Ξ : MT) (Λ : Labels) → Set
@@ -226,8 +228,8 @@ module Compile (rt : Type) where
       (kt kf : □ (FC' (Γ , Φ)) Λ)  -- kt: true, kf: false
       → FC' (Γ , Φ) Λ
 
-    compileIf (eBool false) kt kf = kf ⊆-refl
-    compileIf (eBool true) kt kf = kt ⊆-refl
+    compileIf (eConst false) kt kf = kf ⊆-refl
+    compileIf (eConst true) kt kf = kt ⊆-refl
 
     compileIf (eOp (logic and) e e') kt kf =
       joinPoint kf λ ρ kf' →
@@ -261,7 +263,13 @@ module Compile (rt : Type) where
       (e : Exp Σ Γ t)          {Λ Φ}
       (k : □ (FC' (Γ , Φ ▷ᵗ t)) Λ)
       → FC' (Γ , Φ) Λ
-    compileExp e k = {!!}
+    compileExp (eConst v)  k = fcConst v (k ⊆-refl)
+    compileExp (eVar x) k = {!!}
+    compileExp (eApp f es) k = {!!}
+    compileExp (eBuiltin f es) k = {!!}
+    compileExp (eIncrDecr p k₁ x) k = {!!}
+    compileExp (eOp op e e') k = {!!}
+    compileExp (eAss x e) k = {!!}
 
 
 -- -}
