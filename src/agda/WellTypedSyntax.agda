@@ -65,6 +65,8 @@ _▷_ : Cxt → CxtExt → Cxt
 _▷ᵈ_ : Cxt → Block → Cxt
 (Δ ∷ Γ) ▷ᵈ Δ'  = (Δ' ++ Δ) ∷ Γ
 
+vzero : ∀{Γ Δ t} → Var ((t ∷ Δ) ∷ Γ) t
+vzero = var (here refl) (here refl)
 
 -- Rank-1 function types
 

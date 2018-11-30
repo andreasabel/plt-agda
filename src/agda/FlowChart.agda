@@ -50,7 +50,7 @@ k ∙ ρ = λ ρ' → k (⊆-trans ρ ρ')
 data StackI : (Φ Φ' : ST) → Set where
   const : ∀{Φ} (t : Ty) (c : Val` t) → StackI Φ (t ∷ Φ)
   dup   : ∀{Φ t} → StackI (t ∷ Φ) (t ∷ t ∷ Φ)
-  pop   : ∀{Φ t} → StackI (t ∷ Φ) Φ
+  pop   : ∀{Φ t} → StackI (Φ ▷ᵗ t) Φ
   dcmp  : ∀{Φ} → StackI (double ∷ double ∷ Φ) (int ∷ Φ)
   arith : ∀{Φ t} (op : ArithOp t) → StackI (t ∷ t ∷ Φ) (t ∷ Φ)
 
@@ -91,7 +91,7 @@ data StoreI (Γ : Cxt) : (Φ Φ' : ST) → Set where
 data AdmScope : (Γ Γ' : Cxt) → Set where
   newBlock : ∀{Γ}   → AdmScope Γ        ([] ∷⁺ Γ)
   popBlock : ∀{Γ Δ} → AdmScope (Δ ∷⁺ Γ) Γ
-  decl     : ∀{Γ} t → AdmScope Γ        (Γ ▷ just t)
+  decl     : ∀{Γ t} → AdmScope Γ        (Γ ▷ just t)
 
 -- Conditions for jumps
 
@@ -118,71 +118,81 @@ data JF : (Ξ Ξ' : MT) → Set where
 -- Control
 
 -- Ξ is machine state type when starting to run fc
-data FC (Λ : Labels) : (Ξ : MT) → Set where
-  -- Ends:
-  fcGoto   : ∀{Ξ} (l : Ξ ∈ Λ) → FC Λ Ξ           -- goto join point (same Ξ)
-  fcReturn : ∀{Γ Φ} t         → FC Λ (Γ , t ∷ Φ) -- return from function
-  -- Branching:
-  fcIfElse : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (fc fc' : FC Λ (Γ , Φ')) → FC Λ (Γ , Φ)
-  -- Label definition
-  fcLet    : ∀{Ξ Ξ'} (fc  : FC Λ Ξ') (fc' : FC (Ξ' ∷ Λ) Ξ) → FC Λ Ξ
-  fcFix    : ∀{Ξ} (fc : FC (Ξ ∷ Λ) Ξ) → FC Λ Ξ
-  -- Cons-like: Instruction
-  fcExec     : ∀{Ξ Ξ'} (j : JF Ξ Ξ') (fc : FC Λ Ξ') → FC Λ Ξ
 
-  -- Scope
-  -- fcAdm      : ∀{Γ Γ'}(adm : AdmScope Γ Γ') (fc : FC Λ Γ') → FC Λ Γ
+module Compile (rt : Type) where
+  data FC (Λ : Labels) : (Ξ : MT) → Set where
+    -- Ends:
+    fcGoto   : ∀{Ξ} (l : Ξ ∈ Λ) → FC Λ Ξ           -- goto join point (same Ξ)
+    fcReturn : ∀{Γ Φ}           → FC Λ (Γ , Φ ▷ᵗ rt) -- return from function
+    -- Branching:
+    fcIfElse : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (fc fc' : FC Λ (Γ , Φ')) → FC Λ (Γ , Φ)
+    -- Label definition
+    fcLet    : ∀{Ξ Ξ'} (fc  : FC Λ Ξ') (fc' : FC (Ξ' ∷ Λ) Ξ) → FC Λ Ξ
+    fcFix    : ∀{Ξ} (fc : FC (Ξ ∷ Λ) Ξ) → FC Λ Ξ
+    -- Cons-like: Instruction
+    fcExec     : ∀{Ξ Ξ'} (j : JF Ξ Ξ') (fc : FC Λ Ξ') → FC Λ Ξ
+
+    -- Scope
+    -- fcAdm      : ∀{Γ Γ'}(adm : AdmScope Γ Γ') (fc : FC Λ Γ') → FC Λ Γ
+    -- fcNewBlock : ∀{Γ}   (fc : FC Λ ([] ∷⁺ Γ)) → FC Λ Γ
+    -- fcPopBlock : ∀{Γ Δ} (fc : FC Λ Γ) → FC Λ (Δ ∷⁺ Γ)
+    -- fcDecl     : ∀{Γ} t (fc : FC Λ (Γ ▷ just t)) → FC Λ Γ
+    -- Instruction
+    -- fcExec     : ∀{Ξ Ξ'} (j : JF Ξ Ξ') (fc : FC Λ Ξ') → FC Λ Ξ
+    -- fcExec     : ∀{Γ} (j : JF Γ Γ' Φ Φ' ) (fc : FC Λ Γ) → FC Λ Γ
+    -- fcExec     : ∀{Γ} (e : Eff Γ) (fc : FC Λ Γ) → FC Λ Γ
+
+  -- fcAdm : ∀{Γ Γ' Φ}(adm : ScopeI Γ Γ') (fc : FC Λ (Γ', Φ)) → FC Λ (Γ , Φ)
+  pattern fcAdm j fc = fcExec (scopeI j) fc
   -- fcNewBlock : ∀{Γ}   (fc : FC Λ ([] ∷⁺ Γ)) → FC Λ Γ
+  pattern fcNewBlock fc = fcAdm newBlock fc
   -- fcPopBlock : ∀{Γ Δ} (fc : FC Λ Γ) → FC Λ (Δ ∷⁺ Γ)
-  -- fcDecl     : ∀{Γ} t (fc : FC Λ (Γ ▷ just t)) → FC Λ Γ
-  -- Instruction
-  -- fcExec     : ∀{Ξ Ξ'} (j : JF Ξ Ξ') (fc : FC Λ Ξ') → FC Λ Ξ
-  -- fcExec     : ∀{Γ} (j : JF Γ Γ' Φ Φ' ) (fc : FC Λ Γ) → FC Λ Γ
-  -- fcExec     : ∀{Γ} (e : Eff Γ) (fc : FC Λ Γ) → FC Λ Γ
+  pattern fcPopBlock fc = fcAdm popBlock fc
+  -- fcDecl     : ∀{Γ t} (fc : FC Λ (Γ ▷ just t)) → FC Λ Γ
+  pattern fcDecl fc = fcAdm decl fc
 
--- fcAdm : ∀{Γ Γ' Φ}(adm : ScopeI Γ Γ') (fc : FC Λ (Γ', Φ)) → FC Λ (Γ , Φ)
-pattern fcAdm j fc = fcExec (scopeI j) fc
--- fcNewBlock : ∀{Γ}   (fc : FC Λ ([] ∷⁺ Γ)) → FC Λ Γ
-pattern fcNewBlock fc = fcAdm newBlock fc
--- fcPopBlock : ∀{Γ Δ} (fc : FC Λ Γ) → FC Λ (Δ ∷⁺ Γ)
-pattern fcPopBlock fc = fcAdm popBlock fc
--- fcDecl     : ∀{Γ} t (fc : FC Λ (Γ ▷ just t)) → FC Λ Γ
-pattern fcDecl t   fc = fcAdm (decl t) fc
+  pattern fcPop fc = fcExec (stackI pop) fc
+  pattern fcAssign x fc = fcExec (storeI (store x)) fc
 
-FC' : (Ξ : MT) (Λ : Labels) → Set
-FC' Ξ Λ = FC Λ Ξ
+  FC' : (Ξ : MT) (Λ : Labels) → Set
+  FC' Ξ Λ = FC Λ Ξ
 
-_newLabel :  ∀{Λ Ξ Ξ'}
-  → (f : □ (□ (FC' Ξ') →̇ FC' Ξ) Λ)
-  → FC (Ξ' ∷ Λ) Ξ
-_newLabel f = f wk1 λ ρ → fcGoto (weakLabel ρ (here refl))
+  _newLabel :  ∀{Λ Ξ Ξ'}
+    → (f : □ (□ (FC' Ξ') →̇ FC' Ξ) Λ)
+    → FC (Ξ' ∷ Λ) Ξ
+  _newLabel f = f wk1 λ ρ → fcGoto (weakLabel ρ (here refl))
 
-joinPoint : ∀{Λ Ξ Ξ'}
-  → (k : □ (FC' Ξ') Λ)
-  → (f : □ (□ (FC' Ξ') →̇ FC' Ξ) Λ)
-  → FC Λ Ξ
-joinPoint k f = case k ⊆-refl of λ where
-  (fcGoto _) → f ⊆-refl k
-  k'         → fcLet k' $ f newLabel
+  joinPoint : ∀{Λ Ξ Ξ'}
+    → (k : □ (FC' Ξ') Λ)
+    → (f : □ (□ (FC' Ξ') →̇ FC' Ξ) Λ)
+    → FC Λ Ξ
+  joinPoint k f = case k ⊆-refl of λ where
+    (fcGoto _) → f ⊆-refl k
+    k'         → fcLet k' $ f newLabel
 
-fix : ∀{Ξ Λ}
-  → (f : □ (□ (FC' Ξ) →̇ FC' Ξ) Λ)
-  → FC Λ Ξ
-fix f = fcFix $ f newLabel
+  fix : ∀{Ξ Λ}
+    → (f : □ (□ (FC' Ξ) →̇ FC' Ξ) Λ)
+    → FC Λ Ξ
+  fix f = fcFix $ f newLabel
 
-{-
 
-  module CompileStm where
-   mutual
+  mutual
 
     -- Continuation k is not duplicable
-    compileStm : ∀{rt Γ mt}
-      (s : Stm Σ rt Γ mt) {Λ}
-      (k : □ (FC' (Γ ▷ mt)) Λ)
-      → FC Λ Γ
-    compileStm (sReturn e)   k = fcReturn {!compileRet e!}
-    compileStm (sExp e)      k = fcExec {!compileEff e!} (k ⊆-refl)
-    compileStm (sInit {t} e) k = fcDecl t {!compileAss e!}
+    compileStm : ∀{Γ mt}
+      (s : Stm Σ rt Γ mt)         {Λ Φ}
+      (k : □ (FC' (Γ ▷ mt , Φ)) Λ)
+      → FC' (Γ , Φ) Λ
+
+    compileStm (sReturn e)      k = compileExp e λ ρ → fcReturn
+    compileStm (sExp e)         k = compileExp e $ fcPop ∘ k
+    -- compileStm (sExp e)      k = compileExp e λ ρ → fcPop (k ρ)
+
+    compileStm (sInit nothing)  k = fcDecl (k ⊆-refl)
+    compileStm (sInit (just e)) k = compileExp e $
+      fcDecl ∘ fcAssign vzero ∘ k
+    -- compileStm (sInit {t} (just e)) k = compileExp e λ ρ →
+    --   fcDecl (fcAssign (var (here refl) (here refl)) (k ρ))
 
     compileStm (sBlock ss) k =
       fcNewBlock $ compileStms ss λ ρ →
@@ -199,10 +209,10 @@ fix f = fcFix $ f newLabel
 
     -- Compiling statements
 
-    compileStms : ∀{rt Γ Δ Δ'}
-      (ss : Stms Σ rt Γ Δ Δ') {Λ}
-      (k : □ (FC' (Δ' ∷ Γ)) Λ)
-      → FC Λ (Δ ∷ Γ)
+    compileStms : ∀{Γ Δ Δ'}
+      (ss : Stms Σ rt Γ Δ Δ') {Λ Φ}
+      (k : □ (FC' (Δ' ∷ Γ , Φ)) Λ)
+      → FC' (Δ ∷ Γ , Φ) Λ
     compileStms []       k = k ⊆-refl
     compileStms (s ∷ ss) k =
       compileStm  s  λ ρ →
@@ -212,9 +222,9 @@ fix f = fcFix $ f newLabel
     -- Compiling conditionals
 
     compileIf : ∀{Γ}
-      (e : Exp` Σ Γ bool) {Λ}
-      (kt kf : □ (FC' Γ) Λ)  -- kt: true, kf: false
-      → FC' Γ Λ
+      (e : Exp` Σ Γ bool) {Λ Φ}
+      (kt kf : □ (FC' (Γ , Φ)) Λ)  -- kt: true, kf: false
+      → FC' (Γ , Φ) Λ
 
     compileIf (eBool false) kt kf = kf ⊆-refl
     compileIf (eBool true) kt kf = kt ⊆-refl
@@ -245,6 +255,14 @@ fix f = fcFix $ f newLabel
     compileIf (eOp (arith (minus ())) e e') kt kf
     compileIf (eOp (arith (times ())) e e') kt kf
     compileIf (eOp (arith (div ())) e e') kt kf
+
+    -- Compiling expressions
+    compileExp : ∀{Γ t}
+      (e : Exp Σ Γ t)          {Λ Φ}
+      (k : □ (FC' (Γ , Φ ▷ᵗ t)) Λ)
+      → FC' (Γ , Φ) Λ
+    compileExp e k = {!!}
+
 
 -- -}
 -- -}
