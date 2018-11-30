@@ -3,6 +3,7 @@
 
 open import Library renaming (⊆-lookup to weakLabel)
 open import WellTypedSyntax
+open import Value
 
 module FlowChart (Σ : Sig) where
 
@@ -39,16 +40,35 @@ F →̇ G = λ Λ → F Λ → G Λ
 _∙_ : ∀{F Λ} (k : □ F Λ) → □ (□ F) Λ
 k ∙ ρ = λ ρ' → k (⊆-trans ρ ρ')
 
+ST = Block
+
+-- Stack-only instructions
+
+data StackI : (Φ Φ' : ST) → Set where
+  const : ∀{Φ} (t : Ty) (c : Val` t) → StackI Φ (t ∷ Φ)
+  dup   : ∀{Φ t} → StackI (t ∷ Φ) (t ∷ t ∷ Φ)
+  pop   : ∀{Φ t} → StackI (t ∷ Φ) Φ
+  dcmp  : ∀{Φ} → StackI (double ∷ double ∷ Φ) (int ∷ Φ)
+  arith : ∀{Φ t} (op : ArithOp t) → StackI (t ∷ t ∷ Φ) (t ∷ Φ)
+
+-- Store-manipulating instructions
+
+data IncDec : Set where
+  inc dec : IncDec
+
+data StoreI (Γ : Cxt) : (Φ Φ' : ST) → Set where
+  store  : ∀{Φ t} (x : Var Γ t) → StoreI Γ (t ∷ Φ) Φ
+  load   : ∀{Φ t} (x : Var Γ t) → StoreI Γ Φ (t ∷ Φ)
+  incDec : ∀{Φ} (b : IncDec) (x : Var Γ int) → StoreI Γ Φ Φ
+
 -- Control-free instructions:
 --
 -- * No jumps.
 -- * Can mutate local variables but not create them.
 -- * Can manipulate the stack
 
-ST = Block
-
 module _ (Σ : Sig) where
-  data SI (Γ : Cxt) : (Φ Ψ : ST) → Set where
+  data SI (Γ : Cxt) : (Φ Φ' : ST) → Set where
     store  : ∀{Φ t} (x : Var Γ t) → SI Γ (t ∷ Φ) Φ
     load   : ∀{Φ t} (x : Var Γ t) → SI Γ Φ (t ∷ Φ)
     iconst : ∀{Φ} (i : ℤ) → SI Γ Φ (int ∷ Φ)
@@ -63,6 +83,20 @@ module _ (Σ : Sig) where
     -- -- Embed some flow chart with local jumps
     -- box   : FC [] Γ SI  -- This would require and ending context as well.
 
+-- Scope-manipulating instructions
+-- * Create and destroy local variables
+
+data AdmScope : (Γ Γ' : Cxt) → Set where
+  newBlock : ∀{Γ}   → AdmScope Γ        ([] ∷⁺ Γ)
+  popBlock : ∀{Γ Δ} → AdmScope (Δ ∷⁺ Γ) Γ
+  decl     : ∀{Γ} t → AdmScope Γ        (Γ ▷ just t)
+
+-- Conditions for jumps
+
+data Cond : (Φ Φ' : ST) → Set where
+  cmp    : ∀{Φ t} (cmp : CmpOp t) → Cond (t ∷ t ∷ Φ) Φ
+  eqBool : ∀{Φ}   (b : Bool)      → Cond (bool ∷ Φ)  Φ
+  eqZero : ∀{Φ}   (b : Bool)      → Cond (int ∷ Φ)   Φ
 
 -- Control
 
@@ -79,11 +113,19 @@ module _ (Ret Cond Eff : Cxt → Set) where
     fcFix    : ∀{Γ} (fc : FC (Γ ∷ Λ) Γ) → FC Λ Γ
     -- Cons-like:
     -- Scope
-    fcNewBlock : ∀{Γ}   (fc : FC Λ ([] ∷⁺ Γ)) → FC Λ Γ
-    fcPopBlock : ∀{Γ Δ} (fc : FC Λ Γ) → FC Λ (Δ ∷⁺ Γ)
-    fcDecl     : ∀{Γ t} (fc : FC Λ (Γ ▷ just t)) → FC Λ Γ
+    fcAdm      : ∀{Γ Γ'}(adm : AdmScope Γ Γ') (fc : FC Λ Γ') → FC Λ Γ
+    -- fcNewBlock : ∀{Γ}   (fc : FC Λ ([] ∷⁺ Γ)) → FC Λ Γ
+    -- fcPopBlock : ∀{Γ Δ} (fc : FC Λ Γ) → FC Λ (Δ ∷⁺ Γ)
+    -- fcDecl     : ∀{Γ} t (fc : FC Λ (Γ ▷ just t)) → FC Λ Γ
     -- Instruction
     fcExec     : ∀{Γ} (e : Eff Γ) (fc : FC Λ Γ) → FC Λ Γ
+
+  -- fcNewBlock : ∀{Γ}   (fc : FC Λ ([] ∷⁺ Γ)) → FC Λ Γ
+  pattern fcNewBlock fc = fcAdm newBlock fc
+  -- fcPopBlock : ∀{Γ Δ} (fc : FC Λ Γ) → FC Λ (Δ ∷⁺ Γ)
+  pattern fcPopBlock fc = fcAdm popBlock fc
+  -- fcDecl     : ∀{Γ} t (fc : FC Λ (Γ ▷ just t)) → FC Λ Γ
+  pattern fcDecl t   fc = fcAdm (decl t) fc
 
   FC' : (Γ : Cxt) (Λ : Labels) → Set
   FC' Γ Λ = FC Λ Γ
@@ -114,9 +156,9 @@ module _ (Ret Cond Eff : Cxt → Set) where
       (s : Stm Σ rt Γ mt) {Λ}
       (k : □ (FC' (Γ ▷ mt)) Λ)
       → FC Λ Γ
-    compileStm (sReturn e) k = fcReturn {!compileRet e!}
-    compileStm (sExp e)    k = fcExec {!compileEff e!} (k ⊆-refl)
-    compileStm (sInit e)   k = fcDecl {!compileAss e!}
+    compileStm (sReturn e)   k = fcReturn {!compileRet e!}
+    compileStm (sExp e)      k = fcExec {!compileEff e!} (k ⊆-refl)
+    compileStm (sInit {t} e) k = fcDecl t {!compileAss e!}
 
     compileStm (sBlock ss) k =
       fcNewBlock $ compileStms ss λ ρ →
