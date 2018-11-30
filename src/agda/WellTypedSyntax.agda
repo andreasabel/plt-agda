@@ -9,19 +9,7 @@
 module WellTypedSyntax where
 
 open import Library
-
--- Variables cannot have type void.
-
-data Ty : Set where
-  int double bool : Ty
-
--- Return types may be void.
-
-data Type : Set where
-  `_ : (t : Ty) → Type
-  void : Type
-
-infixr 100 `_
+open import Value public
 
 -- Typing contexts are lists of blocks.
 -- There is at least one block, which can be empty.
@@ -150,12 +138,10 @@ module _ (Σ : Sig) (Γ : Cxt) where
     Exps = List.All Exp`
 
     data Exp where
-      eInt       : (i : ℤ)                                             → Exp` int
-      eDouble    : (d : Float)                                         → Exp` double
-      eBool      : (b : Bool)                                          → Exp` bool
-      eVar       : ∀{t}    (x : Var Γ t)                               → Exp` t
-      eApp       : ∀{t ts} (f : Fun Σ (funType ts t)) (es : Exps ts)   → Exp t
-      eBuiltin   : ∀{t ts} (f : Builtin (funType ts t)) (es : Exps ts) → Exp t
+      eConst     : ∀{t}    (v : Val` t)                                 → Exp` t
+      eVar       : ∀{t}    (x : Var Γ t)                                → Exp` t
+      eApp       : ∀{t ts} (f : Fun Σ (funType ts t)) (es : Exps ts)    → Exp t
+      eBuiltin   : ∀{t ts} (f : Builtin (funType ts t)) (es : Exps ts)  → Exp t
       eIncrDecr  : ∀{t}    (p : PrePost) (k : IncrDecr t) (x : Var Γ t) → Exp` t
       eOp        : ∀{t t'} (op : Op t t') (e e' : Exp` t)               → Exp` t'
       eAss       : ∀{t}    (x : Var Γ t) (e : Exp` t)                   → Exp` t

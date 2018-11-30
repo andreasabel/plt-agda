@@ -3,7 +3,19 @@
 module Value where
 
 open import Library
-open import WellTypedSyntax
+
+-- Variables cannot have type void.
+
+data Ty : Set where
+  int double bool : Ty
+
+-- Return types may be void.
+
+data Type : Set where
+  `_ : (t : Ty) → Type
+  void : Type
+
+infixr 100 `_
 
 -- Well-typed values.
 
@@ -38,28 +50,3 @@ printVal` bool   b = printBool b
 printVal : ∀ t → Val t → String
 printVal (` t)  v = printVal` t v
 printVal void   _ = "undefined"
-
--- Results of evaluating a statement
-
-data Res (t : Type) : Set where
-  ret : (v : Val t) → Res t
-  cont : Res t
-
--- Environments.
-
--- An environment entry can be undefined,
--- but cannot be of type void.
-
-Entry : Ty → Set
-Entry t = Maybe (Val` t)
-
--- An environment is a list of frames.
-
-Frame : Block → Set
-Frame = List.All Entry
-
-Env : Cxt → Set
-Env = List⁺.All Frame
-
-push : ∀{t} (v : Entry t) {Γ} (γ : Env Γ) → Env (Γ ▷ just t)
-push v (δ ∷ γ) = (v ∷ δ) ∷ γ

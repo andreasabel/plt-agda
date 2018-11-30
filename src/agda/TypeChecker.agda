@@ -244,10 +244,10 @@ module CheckExpressions {Σ : Sig} {Γ : Cxt} (ξ : TCEnv Σ Γ) where
 
     inferExp : (e : A.Exp) → Infer
 
-    inferExp A.eTrue       = return (` bool   , eBool   true)
-    inferExp A.eFalse      = return (` bool   , eBool   false)
-    inferExp (A.eInt i)    = return (` int    , eInt    i)
-    inferExp (A.eDouble d) = return (` double , eDouble d)
+    inferExp A.eTrue       = return (` bool   , eConst true)
+    inferExp A.eFalse      = return (` bool   , eConst false)
+    inferExp (A.eInt i)    = return (` int    , eConst i)
+    inferExp (A.eDouble d) = return (` double , eConst d)
 
     inferExp (A.eId x) = do
       (t , x') ← lookupVar (idToName x)

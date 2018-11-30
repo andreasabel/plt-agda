@@ -3,6 +3,7 @@ module Evaluation where
 open import Library
 open import WellTypedSyntax
 open import Value
+open import Environment
 
 -- We do not need a return statement when a function returns void.
 
@@ -71,14 +72,8 @@ mutual
   data _,_⊢_⇓ᵉ_,_ {Σ} (P : Prg Σ Σ) {Γ} (γ : Env Γ) :
     ∀ {t} (e : Exp Σ Γ t) (v : Val t) (γ' : Env Γ) → Set where
 
-    evInt : ∀{i}
-      → P , γ ⊢ eInt i ⇓ᵉ i , γ
-
-    evDouble : ∀{d}
-      → P , γ ⊢ eDouble d ⇓ᵉ d , γ
-
-    evBool : ∀{b}
-      → P , γ ⊢ eBool b ⇓ᵉ b , γ
+    evConst : ∀{t}{v : Val` t}
+      → P , γ ⊢ eConst v ⇓ᵉ v , γ
 
     evVar : ∀{t} {x : Var Γ t} {v : Val` t}
       → γ ⊢ x ⇓ˣ v

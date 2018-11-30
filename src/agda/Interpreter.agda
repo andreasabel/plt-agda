@@ -6,6 +6,7 @@ open import Library renaming (IO to OS)
 
 open import WellTypedSyntax
 open import Value
+open import Environment
 import IOTree
 
 -- Commands for the interaction.
@@ -195,9 +196,7 @@ module Interpret {Σ : Sig} (prg : Program Σ) where
       -- Includes expressions of type void.
 
       evalExp : ∀{i t} (e : Exp Σ Γ t) → Eval i (Val t)
-      evalExp (eInt i)    = return i
-      evalExp (eDouble d) = return d
-      evalExp (eBool b)   = return b
+      evalExp (eConst v)  = return v
       evalExp (eVar x)    = evalVar x
       evalExp (eApp {t = rt} f es) = do
         vs    ← evalExps es
