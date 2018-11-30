@@ -1,7 +1,7 @@
 -- Expressing control constructs in terms of labels and jumps.
 
 
-open import Library renaming (⊆-lookup to weakLabel)
+open import Library renaming (⊆-lookup to weakLabel; ⊆-refl to !)
 open import WellTypedSyntax
 open import Value
 
@@ -31,7 +31,7 @@ LabelType = MT
 Labels = List LabelType
 
 wk1 : ∀{lt : LabelType} {Λ} → Λ ⊆ lt ∷ Λ
-wk1 = ⊆-skip ⊆-refl
+wk1 = ⊆-skip !
 
 □ : (F : Labels → Set) → Labels → Set
 □ F Λ = ∀ {Λ'} (ρ : Λ ⊆ Λ') → F Λ'
@@ -41,6 +41,10 @@ _□→_ : (F G : Labels → Set) → Labels → Set
 
 _→̇_ : (F G : Labels → Set) → Labels → Set
 F →̇ G = λ Λ → F Λ → G Λ
+
+-- Comonad structure
+
+-- _ ! : ∀{F Λ} (k : □ F Λ) → F Λ
 
 _∙_ : ∀{F Λ} (k : □ F Λ) → □ (□ F) Λ
 k ∙ ρ = λ ρ' → k (⊆-trans ρ ρ')
@@ -103,10 +107,11 @@ data Cond : (Φ Φ' : ST) → Set where
 -- Single jump-free instruction
 
 data JF : (Ξ Ξ' : MT) → Set where
-  stackI : ∀{Γ Φ Φ'} (j : StackI Φ Φ') → JF (Γ , Φ) (Γ , Φ')
-  storeI : ∀{Γ Φ Φ'} (j : StoreI Γ Φ Φ') → JF (Γ , Φ) (Γ , Φ')
-  scopeI : ∀{Γ Γ' Φ} (adm : AdmScope Γ Γ') → JF (Γ , Φ) (Γ' , Φ)
-  call   : ∀{Γ Φ Δ rt} (f : funType Δ rt ∈ Σ) → JF (Γ , Δ ++ Φ) (Γ , Φ ▷ᵗ rt)
+  stackI  : ∀{Γ Φ Φ'} (j : StackI Φ Φ') → JF (Γ , Φ) (Γ , Φ')
+  storeI  : ∀{Γ Φ Φ'} (j : StoreI Γ Φ Φ') → JF (Γ , Φ) (Γ , Φ')
+  scopeI  : ∀{Γ Γ' Φ} (adm : AdmScope Γ Γ') → JF (Γ , Φ) (Γ' , Φ)
+  call    : ∀{Γ Φ Δ rt} (f :       funType Δ rt ∈ Σ) → JF (Γ , Δ ++ʳ Φ) (Γ , Φ ▷ᵗ rt)
+  builtin : ∀{Γ Φ Δ rt} (b : Builtin (funType Δ rt)) → JF (Γ , Δ ++ʳ Φ) (Γ , Φ ▷ᵗ rt)
 
 -- module _ (Σ : Sig) where
 --   data JF : (Γ Γ' : Cxt) (Φ Φ' : ST) → Set where
@@ -123,7 +128,7 @@ module Compile (rt : Type) where
   data FC (Λ : Labels) : (Ξ : MT) → Set where
     -- Ends:
     fcGoto   : ∀{Ξ} (l : Ξ ∈ Λ) → FC Λ Ξ           -- goto join point (same Ξ)
-    fcReturn : ∀{Γ Φ}           → FC Λ (Γ , Φ ▷ᵗ rt) -- return from function
+    fcReturn : ∀{Γ Φ}           → FC Λ (Γ , Φ ▷ᵗ rt) -- return from function (stack is destroyed)
     -- Branching:
     fcIfElse : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (fc fc' : FC Λ (Γ , Φ')) → FC Λ (Γ , Φ)
     -- Label definition
@@ -151,10 +156,23 @@ module Compile (rt : Type) where
   -- fcDecl     : ∀{Γ t} (fc : FC Λ (Γ ▷ just t)) → FC Λ Γ
   pattern fcDecl fc = fcAdm decl fc
 
-  pattern fcSI j fc = fcExec (stackI j) fc
-  pattern fcConst v fc = fcSI (const v) fc
-  pattern fcPop fc = fcSI pop fc
-  pattern fcAssign x fc = fcExec (storeI (store x)) fc
+  pattern fcStackI j fc = fcExec (stackI j) fc
+
+  pattern fcConst  v fc = fcStackI (const v) fc
+  pattern fcPop      fc = fcStackI pop fc
+  pattern fcDup      fc = fcStackI dup fc
+  pattern fcArith op fc = fcStackI (arith op) fc
+
+  pattern fcAdd   t  fc = fcArith (plus  t) fc
+  pattern fcSub   t  fc = fcArith (minus t) fc
+
+  pattern fcStoreI j fc = fcExec (storeI j) fc
+  pattern fcAssign x fc = fcStoreI (store x) fc
+  pattern fcLoad   x fc = fcStoreI (load x) fc
+  pattern fcIncDec b x fc = fcStoreI (incDec b x) fc
+
+  pattern fcCall    f fc = fcExec (call    f) fc
+  pattern fcBuiltin f fc = fcExec (builtin f) fc
 
   FC' : (Ξ : MT) (Λ : Labels) → Set
   FC' Ξ Λ = FC Λ Ξ
@@ -168,8 +186,8 @@ module Compile (rt : Type) where
     → (k : □ (FC' Ξ') Λ)
     → (f : □ (□ (FC' Ξ') →̇ FC' Ξ) Λ)
     → FC Λ Ξ
-  joinPoint k f = case k ⊆-refl of λ where
-    (fcGoto _) → f ⊆-refl k
+  joinPoint k f = case k ! of λ where
+    (fcGoto _) → f ! k
     k'         → fcLet k' $ f newLabel
 
   fix : ∀{Ξ Λ}
@@ -190,7 +208,7 @@ module Compile (rt : Type) where
     compileStm (sExp e)         k = compileExp e $ fcPop ∘ k
     -- compileStm (sExp e)      k = compileExp e λ ρ → fcPop (k ρ)
 
-    compileStm (sInit nothing)  k = fcDecl (k ⊆-refl)
+    compileStm (sInit nothing)  k = fcDecl (k !)
     compileStm (sInit (just e)) k = compileExp e $
       fcDecl ∘ fcAssign vzero ∘ k
     -- compileStm (sInit {t} (just e)) k = compileExp e λ ρ →
@@ -215,7 +233,7 @@ module Compile (rt : Type) where
       (ss : Stms Σ rt Γ Δ Δ') {Λ Φ}
       (k : □ (FC' (Δ' ∷ Γ , Φ)) Λ)
       → FC' (Δ ∷ Γ , Φ) Λ
-    compileStms []       k = k ⊆-refl
+    compileStms []       k = k !
     compileStms (s ∷ ss) k =
       compileStm  s  λ ρ →
       compileStms ss λ ρ' →
@@ -228,48 +246,117 @@ module Compile (rt : Type) where
       (kt kf : □ (FC' (Γ , Φ)) Λ)  -- kt: true, kf: false
       → FC' (Γ , Φ) Λ
 
-    compileIf (eConst false) kt kf = kf ⊆-refl
-    compileIf (eConst true) kt kf = kt ⊆-refl
+    compileIf (eConst false) kt kf = kf !
+    compileIf (eConst true ) kt kf = kt !
+    compileIf (eOp op e e')  kt kf = compileIfOp op e e' kt kf
 
-    compileIf (eOp (logic and) e e') kt kf =
-      joinPoint kf λ ρ kf' →
-      compileIf e (λ ρ' → compileIf e' (kt ∙ ⊆-trans ρ ρ')
-                                       (kf' ∙ ρ'))
-                  kf'
+    -- compileIf (eOp (logic and) e e') kt kf =
+    --   joinPoint kf λ ρ kf' →
+    --   compileIf e (λ ρ' → compileIf e' (kt ∙ ⊆-trans ρ ρ')
+    --                                    (kf' ∙ ρ'))
+    --               kf'
 
-    compileIf (eOp (logic or) e e') kt kf =
-      joinPoint kt λ ρ kt' →
-      compileIf e kt' λ ρ' →
-      compileIf e' (kt' ∙ ρ') (kf ∙ ⊆-trans ρ ρ')
+    -- compileIf (eOp (logic or) e e') kt kf =
+    --   joinPoint kt λ ρ kt' →
+    --   compileIf e kt' λ ρ' →
+    --   compileIf e' (kt' ∙ ρ') (kf ∙ ⊆-trans ρ ρ')
 
-    compileIf (eOp (cmp op) e e') kt kf = {!!}
+    -- compileIf (eOp (cmp op) e e') kt kf =
+    --   compileExp e  λ ρ  →
+    --   compileExp e' λ ρ' →
+    --   fcIfElse (cmp op) (kt (⊆-trans ρ ρ'))
+    --                     (kf (⊆-trans ρ ρ'))
 
     -- General boolean expressions:
-    compileIf (eVar x)    kt kf = {!!}
-    compileIf (eApp f es) kt kf = {!!}
-    compileIf (eAss x e)  kt kf = {!!}
+    compileIf e@(eVar _  ) kt kf = compileExp e λ ρ → fcIfElse (eqBool true) (kt ρ) (kf ρ)
+    compileIf e@(eApp _ _) kt kf = compileExp e λ ρ → fcIfElse (eqBool true) (kt ρ) (kf ρ)
+    compileIf e@(eAss _ _) kt kf = compileExp e λ ρ → fcIfElse (eqBool true) (kt ρ) (kf ρ)
 
     -- Impossible cases:
     compileIf (eBuiltin () es) kt kf
     compileIf (eIncrDecr p (incr ()) x) kt kf
     compileIf (eIncrDecr p (decr ()) x) kt kf
-    compileIf (eOp (arith (plus ())) e e') kt kf
-    compileIf (eOp (arith (minus ())) e e') kt kf
-    compileIf (eOp (arith (times ())) e e') kt kf
-    compileIf (eOp (arith (div ())) e e') kt kf
+    -- compileIf (eOp (arith (plus ())) e e') kt kf
+    -- compileIf (eOp (arith (minus ())) e e') kt kf
+    -- compileIf (eOp (arith (times ())) e e') kt kf
+    -- compileIf (eOp (arith (div ())) e e') kt kf
+
+    compileIfOp : ∀{Γ t}
+      (op   : Op t bool)
+      (e e' : Exp` Σ Γ t) {Λ Φ}
+      (kt kf : □ (FC' (Γ , Φ)) Λ)  -- kt: true, kf: false
+      → FC' (Γ , Φ) Λ
+
+    compileIfOp (logic and) e e' kt kf =
+      joinPoint kf λ ρ kf' →
+      compileIf e (λ ρ' → compileIf e' (kt ∙ ⊆-trans ρ ρ')
+                                       (kf' ∙ ρ'))
+                  kf'
+
+    compileIfOp (logic or) e e' kt kf =
+      joinPoint kt λ ρ kt' →
+      compileIf e kt' λ ρ' →
+      compileIf e' (kt' ∙ ρ') (kf ∙ ⊆-trans ρ ρ')
+
+    compileIfOp (cmp op) e e' kt kf =
+      compileExp e  λ ρ  →
+      compileExp e' λ ρ' →
+      fcIfElse (cmp op) (kt (⊆-trans ρ ρ'))
+                        (kf (⊆-trans ρ ρ'))
+
+    -- Impossible cases:
+    compileIfOp (arith (plus  ()))
+    compileIfOp (arith (minus ()))
+    compileIfOp (arith (times ()))
+    compileIfOp (arith (div   ()))
+
+    compileBoolOp : ∀{Γ t}
+      (op   : Op t bool)
+      (e e' : Exp` Σ Γ t) {Λ Φ}
+      (k : □ (FC' (Γ , bool ∷ Φ)) Λ)
+      → FC' (Γ , Φ) Λ
+    compileBoolOp op e e' k =
+      joinPoint k λ ρ k' →
+      compileIfOp op e e' (fcConst true ∘ k') (fcConst false ∘ k')
 
     -- Compiling expressions
+
     compileExp : ∀{Γ t}
       (e : Exp Σ Γ t)          {Λ Φ}
       (k : □ (FC' (Γ , Φ ▷ᵗ t)) Λ)
       → FC' (Γ , Φ) Λ
-    compileExp (eConst v)  k = fcConst v (k ⊆-refl)
-    compileExp (eVar x) k = {!!}
-    compileExp (eApp f es) k = {!!}
-    compileExp (eBuiltin f es) k = {!!}
-    compileExp (eIncrDecr p k₁ x) k = {!!}
-    compileExp (eOp op e e') k = {!!}
-    compileExp (eAss x e) k = {!!}
+    compileExp (eConst v)  k = fcConst v (k !)
+    compileExp (eVar x)    k = fcLoad x (k !)
+    compileExp (eAss x e)  k = compileExp e $ fcDup ∘ fcAssign x ∘ k
+
+    compileExp (eIncrDecr pre  (incr int)    x) k = fcIncDec inc x $ fcLoad x $ k !
+    compileExp (eIncrDecr pre  (decr int)    x) k = fcIncDec dec x $ fcLoad x $ k !
+    compileExp (eIncrDecr post (incr int)    x) k = fcLoad x $ fcIncDec inc x $ k !
+    compileExp (eIncrDecr post (decr int)    x) k = fcLoad x $ fcIncDec dec x $ k !
+
+    compileExp (eIncrDecr pre  (incr double) x) k = fcLoad x $ fcConst 1.0 $ fcAdd double $ fcDup $ fcAssign x $ k !
+    compileExp (eIncrDecr pre  (decr double) x) k = fcLoad x $ fcConst 1.0 $ fcSub double $ fcDup $ fcAssign x $ k !
+    compileExp (eIncrDecr post (incr double) x) k = fcLoad x $ fcDup $ fcConst 1.0 $ fcAdd double $ fcAssign x $ k !
+    compileExp (eIncrDecr post (decr double) x) k = fcLoad x $ fcDup $ fcConst 1.0 $ fcSub double $ fcAssign x $ k !
+
+    compileExp (eOp (arith op) e e') k = compileExp e $ compileExp e' ∘ ((fcArith op ∘ k) ∙_)
+    compileExp (eOp (cmp   op) e e') k = compileBoolOp (cmp   op) e e' k
+    compileExp (eOp (logic op) e e') k = compileBoolOp (logic op) e e' k
+
+    compileExp (eApp     f es) k = compileExps es $ fcCall    f ∘ k
+    compileExp (eBuiltin f es) k = compileExps es $ fcBuiltin f ∘ k
+
+    -- Compiling expression list.
+    -- First value ends up first on the stack.
+
+    compileExps : ∀{Γ Δ}
+      (es : Exps Σ Γ Δ)          {Λ Φ}
+      (k : □ (FC' (Γ , Δ ++ʳ Φ)) Λ)
+      → FC' (Γ , Φ) Λ
+
+    compileExps []       k = k !
+    compileExps (e ∷ es) k = compileExp e λ ρ → compileExps es λ ρ' → k (⊆-trans ρ ρ')
+
 
 
 -- -}

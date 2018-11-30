@@ -67,6 +67,8 @@ module Integer where
   postulate div : (i j : ℤ) → ℤ
   {-# COMPILE GHC div = div #-}
 
+-- Lists.
+
 module List where
   open import Data.List.Base public using (map; foldl)
   open import Data.List.All public using (All; []; _∷_) hiding (module All)
@@ -105,6 +107,12 @@ module List where
     updateWith (there x∈xs) f (v ∷ vs) = v ∷ updateWith x∈xs f vs
 
 open List.All public using (here; there)
+
+infixl 5 _++ʳ_
+
+-- Reverse append.
+_++ʳ_ : ∀ {a} {A : Set a} → List A → List A → List A
+xs ++ʳ ys = List.foldl (λ rev x → x ∷ rev) ys xs
 
 module _ {a p} {A : Set a} {P : A → Set p} where
 
