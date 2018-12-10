@@ -16,11 +16,11 @@ module FlowChart where
 -- A label represents the code after it,
 -- starting in scope Γ.
 
-infix 10 _⇛_
+-- infix 10 _⇛_
 
-record LabelType' : Set where
-  constructor _⇛_
-  field Γ Γ' : Cxt
+-- record LabelType' : Set where
+--   constructor _⇛_
+--   field Γ Γ' : Cxt
 
 -- Stack type
 ST = Block
