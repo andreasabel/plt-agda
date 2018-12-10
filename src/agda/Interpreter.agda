@@ -385,7 +385,7 @@ module Interpret {Σ : Sig} (prg : Program Σ) where
   callFun {rt} f vs .IOT.force = tick do
 
     -- Get the statements of the function.
-    let (_ , ss) = lookupFun f (Program.thePrg prg)
+    let (_ , ss) = lookupFun f (thePrg prg)
 
     -- Run them in the environment constructed from the arguments.
     let δ = List.All.map just vs
@@ -400,7 +400,7 @@ module Interpret {Σ : Sig} (prg : Program Σ) where
 -- Evalulating a program.
 
 evalProgram : ∀{i Σ} (prg : Program Σ) → IO i ⊤
-evalProgram prg = _ IOT.<$> callFun (Program.theMain prg) []
+evalProgram prg = _ IOT.<$> callFun (theMain prg) []
   where open Interpret prg
 
 -- Run IO-trees in actual IO (Operating System)

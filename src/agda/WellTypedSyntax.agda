@@ -195,6 +195,7 @@ record Program' (Prg : (Σ Σ' : Sig) → Set) (Σ : Sig) : Set where
   field
     thePrg  : Prg Σ Σ
     theMain : Fun Σ mainType
+open Program' public
 
 Program : (Σ : Sig) → Set
 Program = Program' Prg
