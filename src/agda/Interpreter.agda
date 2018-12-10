@@ -81,7 +81,7 @@ comparison {bool}   nEq  b b' = b xor b'
 lookupFun : ∀{Σ ft} (f : Fun Σ ft) (prg : Prg Σ Σ) → Def Σ ft
 lookupFun f prg = List.All.lookup prg f
 
-lookupVar : ∀{Γ t} (x : Var Γ t) (γ : Env Γ) → Entry t
+lookupVar : ∀{Γ t} (x : Var Γ t) (γ : Env Γ) → Entry` t
 lookupVar (var Δ∈Γ t∈Δ) γ = lookup (lookup γ Δ∈Γ) t∈Δ
   where open List.All
 
@@ -322,18 +322,17 @@ module Interpret {Σ : Sig} (prg : Program Σ) where
     mutual
 
       -- Executing a single statement.
+      -- It returns the value of the new environment entry,
+      -- should the statement be a declaration.
 
-      evalStm : ∀{Γ rt i t} (s : Stm Σ rt Γ t) → Eval i rt Γ (Γ ▷ t) ⊤
+      evalStm : ∀{Γ rt i t} (s : Stm Σ rt Γ t) → Eval i rt Γ Γ (Entry t)
 
       evalStm (sReturn e) = throwError =<< evalExp e
       evalStm (sExp e)    = _ <$> evalExp e
 
-      evalStm (sInit nothing) =
-        modify (push nothing)
+      evalStm (sInit nothing) = return nothing
 
-      evalStm (sInit (just e)) = do
-        v ← evalExp e
-        modify (push (just v))
+      evalStm (sInit (just e)) = just <$> evalExp e
 
       evalStm (sBlock ss) = do
         modify ([] ∷_)         -- push empty frame
@@ -370,7 +369,8 @@ module Interpret {Σ : Sig} (prg : Program Σ) where
       evalStms : ∀{i rt Γ Δ Δ'} (ss : Stms Σ rt Γ Δ Δ') → Eval i rt (Δ ∷ Γ) (Δ' ∷ Γ) ⊤
       evalStms []       = return _
       evalStms (s ∷ ss) = do
-        evalStm  s
+        v ← evalStm s
+        modify (push v)
         evalStms ss
 
   -- end module InterpretStatements

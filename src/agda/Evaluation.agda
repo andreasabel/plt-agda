@@ -25,7 +25,7 @@ record _⊢_⇓ˣ_ {Γ} (γ : Env Γ) {t} (x : Var Γ t) (v : Val` t) : Set wher
 
 -- Pushing new value
 
-_∙_≡_ : ∀{Γ} (γ : Env Γ) {t} (v : Entry t) (γ' : Env (Γ ▷ ` t)) → Set
+_∙_≡_ : ∀{Γ} (γ : Env Γ) {t} (v : Entry` t) (γ' : Env (Γ ▷ ` t)) → Set
 γ ∙ v ≡ γ' = γ' ≡ push v γ
 
 -- Update of variables

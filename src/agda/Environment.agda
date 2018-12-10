@@ -16,16 +16,21 @@ data Res (t : Type) : Set where
 -- An environment entry can be undefined,
 -- but cannot be of type void.
 
-Entry : Ty → Set
-Entry t = Maybe (Val` t)
+Entry` : Ty → Set
+Entry` t = Maybe (Val` t)
 
 -- An environment is a list of frames.
 
 Frame : Block → Set
-Frame = List.All Entry
+Frame = List.All Entry`
 
 Env : Cxt → Set
 Env = List⁺.All Frame
 
-push : ∀{t} (v : Entry t) {Γ} (γ : Env Γ) → Env (Γ ▷ ` t)
-push v (δ ∷ γ) = (v ∷ δ) ∷ γ
+Entry : Type → Set
+Entry void = ⊤
+Entry (` t) = Entry` t
+
+push : ∀{t} (v : Entry t) {Γ} (γ : Env Γ) → Env (Γ ▷ t)
+push {void} _ γ       = γ
+push {` t}  v (δ ∷ γ) = (v ∷ δ) ∷ γ
