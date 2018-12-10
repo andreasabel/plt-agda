@@ -479,7 +479,7 @@ module CheckStatements {Σ : Sig} {rt : Type} where
 
   CheckStm = λ Γ Δ Δ' → TCStm Σ Γ Δ Δ' (Stms Σ rt Γ Δ Δ')
 
-  returnStm : ∀ {Γ Δ} (s : Stm Σ rt (Δ ∷ Γ) nothing) → CheckStm Γ Δ Δ
+  returnStm : ∀ {Γ Δ} (s : Stm Σ rt (Δ ∷ Γ) void) → CheckStm Γ Δ Δ
   returnStm s = return (s ∷ [])
 
   -- Predicting the next shape of the top block.

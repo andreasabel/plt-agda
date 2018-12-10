@@ -35,20 +35,14 @@ Var Γ t = Var⁻ (List⁺.toList Γ) t
 
 -- Block extension
 
-_▷ᵗ_ : Block → Type → Block
-Δ ▷ᵗ void = Δ
-Δ ▷ᵗ ` t  = t ∷ Δ
+_▷ᵇ_ : Block → Type → Block
+Δ ▷ᵇ void = Δ
+Δ ▷ᵇ ` t  = t ∷ Δ
 
 -- Context extensions.
 
-CxtExt = Maybe Ty
-
-_▷ᵇ_ : Block → CxtExt → Block
-Δ ▷ᵇ nothing = Δ
-Δ ▷ᵇ just t  = t ∷ Δ
-
-_▷_ : Cxt → CxtExt → Cxt
-(Δ ∷ Γ) ▷ mt  = (Δ ▷ᵇ mt) ∷ Γ
+_▷_ : Cxt → Type → Cxt
+(Δ ∷ Γ) ▷ t  = (Δ ▷ᵇ t) ∷ Γ
 
 _▷ᵈ_ : Cxt → Block → Cxt
 (Δ ∷ Γ) ▷ᵈ Δ'  = (Δ' ++ Δ) ∷ Γ
@@ -150,23 +144,23 @@ module _ (Σ : Sig) (Γ : Cxt) where
 
 module _ (Σ : Sig) (returnType : Type) where
   mutual
-    data Stm (Γ : Cxt) : CxtExt → Set where
-      sReturn : (e : Exp Σ Γ returnType)                   → Stm Γ nothing
-      sExp    : ∀{t} (e : Exp Σ Γ t)                       → Stm Γ nothing
-      sInit   : ∀{t} (e : Maybe (Exp` Σ Γ t))              → Stm Γ (just t)
+    data Stm (Γ : Cxt) : Type → Set where
+      sReturn : (e : Exp Σ Γ returnType)                   → Stm Γ void
+      sExp    : ∀{t} (e : Exp Σ Γ t)                       → Stm Γ void
+      sInit   : ∀{t} (e : Maybe (Exp` Σ Γ t))              → Stm Γ (` t)
       -- sDecls has been desugared into sInits.
-      sBlock  : ∀{Δ} (ss : Stms (List⁺.toList Γ) [] Δ)     → Stm Γ nothing
+      sBlock  : ∀{Δ} (ss : Stms (List⁺.toList Γ) [] Δ)     → Stm Γ void
       -- The bodies of sWhile and sIfElse do not permit scope extensions here.
       -- The type checker will possibly insert sBlock constructors to ensure
       -- no scope extension happens.
-      sWhile  : (e : Exp` Σ Γ bool) (s : Stm Γ nothing)    → Stm Γ nothing
-      sIfElse : (e : Exp` Σ Γ bool) (s s' : Stm Γ nothing) → Stm Γ nothing
+      sWhile  : (e : Exp` Σ Γ bool) (s : Stm Γ void)    → Stm Γ void
+      sIfElse : (e : Exp` Σ Γ bool) (s s' : Stm Γ void) → Stm Γ void
 
     -- We expose the top block Δ, which can be extended by statements.
 
     data Stms (Γ : List Block) (Δ : Block) : Block → Set where
       []  : Stms Γ Δ Δ
-      _∷_ : ∀{mt} (s : Stm (Δ ∷ Γ) mt) {Δ′} (ss : Stms Γ (Δ ▷ᵇ mt) Δ′) → Stms Γ Δ Δ′
+      _∷_ : ∀{t} (s : Stm (Δ ∷ Γ) t) {Δ′} (ss : Stms Γ (Δ ▷ᵇ t) Δ′) → Stms Γ Δ Δ′
 
 -- Stms can be concatenated.
 

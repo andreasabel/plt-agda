@@ -25,7 +25,7 @@ record _⊢_⇓ˣ_ {Γ} (γ : Env Γ) {t} (x : Var Γ t) (v : Val` t) : Set wher
 
 -- Pushing new value
 
-_∙_≡_ : ∀{Γ} (γ : Env Γ) {t} (v : Entry t) (γ' : Env (Γ ▷ just t)) → Set
+_∙_≡_ : ∀{Γ} (γ : Env Γ) {t} (v : Entry t) (γ' : Env (Γ ▷ ` t)) → Set
 γ ∙ v ≡ γ' = γ' ≡ push v γ
 
 -- Update of variables
@@ -149,29 +149,29 @@ mutual
     -- while
 
     evWhileDone : ∀ {e : Exp` Σ Γ bool}  {γ′ : Env Γ}
-      → P , γ ⊢ e ⇓ᵉ false , γ′      → ∀{s : Stm Σ rt Γ nothing}
+      → P , γ ⊢ e ⇓ᵉ false , γ′      → ∀{s : Stm Σ rt Γ void}
       → P , γ ⊢ sWhile e s ⇓ˢ cont , γ′
 
     evWhileStep : ∀ {e : Exp` Σ Γ bool} {γ′ : Env Γ}
-      → P , γ ⊢ e ⇓ᵉ true , γ′  → ∀{s : Stm Σ rt Γ nothing} {γ″ : Env Γ}
+      → P , γ ⊢ e ⇓ᵉ true , γ′  → ∀{s : Stm Σ rt Γ void} {γ″ : Env Γ}
       → P , γ′ ⊢ s ⇓ˢ cont , γ″       → ∀{r : Res rt} {γ‴ : Env Γ}
       → P , γ″ ⊢ sWhile e s ⇓ˢ r , γ‴
       → P , γ ⊢ sWhile e s ⇓ˢ r , γ‴
 
     evWhileRet : ∀ {e : Exp` Σ Γ bool} {γ′ : Env Γ}
-      → P , γ ⊢ e ⇓ᵉ true , γ′  → ∀{s : Stm Σ rt Γ nothing} {γ″ : Env Γ} {v : Val rt}
+      → P , γ ⊢ e ⇓ᵉ true , γ′  → ∀{s : Stm Σ rt Γ void} {γ″ : Env Γ} {v : Val rt}
       → P , γ′ ⊢ s ⇓ˢ ret v , γ″      → ∀{r : Res rt} {γ‴ : Env Γ}
       → P , γ ⊢ sWhile e s ⇓ˢ ret v , γ″
 
     -- if-else
 
     evIfThen : ∀ {e : Exp` Σ Γ bool} {γ′ : Env Γ}
-      → P , γ ⊢ e ⇓ᵉ true , γ′  → ∀{s s' : Stm Σ rt Γ nothing} {γ″ : Env Γ} {r : Res rt}
+      → P , γ ⊢ e ⇓ᵉ true , γ′  → ∀{s s' : Stm Σ rt Γ void} {γ″ : Env Γ} {r : Res rt}
       → P , γ′ ⊢ s ⇓ˢ r , γ″
       → P , γ ⊢ sIfElse e s s' ⇓ˢ r , γ″
 
     evIfElse : ∀ {e : Exp` Σ Γ bool} {γ′ : Env Γ}
-      → P , γ ⊢ e ⇓ᵉ false , γ′  → ∀{s s' : Stm Σ rt Γ nothing} {γ″ : Env Γ} {r : Res rt}
+      → P , γ ⊢ e ⇓ᵉ false , γ′  → ∀{s s' : Stm Σ rt Γ void} {γ″ : Env Γ} {r : Res rt}
       → P , γ′ ⊢ s' ⇓ˢ r , γ″
       → P , γ ⊢ sIfElse e s s' ⇓ˢ r , γ″
 

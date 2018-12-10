@@ -10,6 +10,7 @@ open import Interpreter using (runProgram)
 -- Other modules, not used here.
 import Value
 import Evaluation
+import FlowChart
 
 check : String → IO ⊤
 check contents = do

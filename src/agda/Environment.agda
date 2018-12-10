@@ -27,5 +27,5 @@ Frame = List.All Entry
 Env : Cxt → Set
 Env = List⁺.All Frame
 
-push : ∀{t} (v : Entry t) {Γ} (γ : Env Γ) → Env (Γ ▷ just t)
+push : ∀{t} (v : Entry t) {Γ} (γ : Env Γ) → Env (Γ ▷ ` t)
 push v (δ ∷ γ) = (v ∷ δ) ∷ γ

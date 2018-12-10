@@ -58,9 +58,9 @@ k ∙ ρ = λ ρ' → k (⊆-trans ρ ρ')
 -- Stack-only instructions
 
 data StackI : (Φ Φ' : ST) → Set where
-  const : ∀{Φ t} (c : Val t) → StackI Φ (Φ ▷ᵗ t)
+  const : ∀{Φ t} (c : Val t) → StackI Φ (Φ ▷ᵇ t)
   dup   : ∀{Φ t} → StackI (t ∷ Φ) (t ∷ t ∷ Φ)
-  pop   : ∀{Φ t} → StackI (Φ ▷ᵗ t) Φ
+  pop   : ∀{Φ t} → StackI (Φ ▷ᵇ t) Φ
   dcmp  : ∀{Φ} → StackI (double ∷ double ∷ Φ) (int ∷ Φ)
   arith : ∀{Φ t} (op : ArithOp t) → StackI (t ∷ t ∷ Φ) (t ∷ Φ)
 
@@ -80,7 +80,7 @@ data StoreI (Γ : Cxt) : (Φ Φ' : ST) → Set where
 data AdmScope : (Γ Γ' : Cxt) → Set where
   newBlock : ∀{Γ}   → AdmScope Γ        ([] ∷⁺ Γ)
   popBlock : ∀{Γ Δ} → AdmScope (Δ ∷⁺ Γ) Γ
-  decl     : ∀{Γ t} → AdmScope Γ        (Γ ▷ just t)
+  decl     : ∀{Γ t} → AdmScope Γ        (Γ ▷ ` t)
 
 -- Conditions for jumps
 
@@ -100,8 +100,8 @@ module _ (Σ : Sig) where
     stackI  : ∀{Γ Φ Φ'} (j : StackI Φ Φ') → JF (Γ , Φ) (Γ , Φ')
     storeI  : ∀{Γ Φ Φ'} (j : StoreI Γ Φ Φ') → JF (Γ , Φ) (Γ , Φ')
     scopeI  : ∀{Γ Γ' Φ} (adm : AdmScope Γ Γ') → JF (Γ , Φ) (Γ' , Φ)
-    call    : ∀{Γ Φ Δ rt} (f :       funType Δ rt ∈ Σ) → JF (Γ , Δ ++ʳ Φ) (Γ , Φ ▷ᵗ rt)
-    builtin : ∀{Γ Φ Δ rt} (b : Builtin (funType Δ rt)) → JF (Γ , Δ ++ʳ Φ) (Γ , Φ ▷ᵗ rt)
+    call    : ∀{Γ Φ Δ rt} (f :       funType Δ rt ∈ Σ) → JF (Γ , Δ ++ʳ Φ) (Γ , Φ ▷ᵇ rt)
+    builtin : ∀{Γ Φ Δ rt} (b : Builtin (funType Δ rt)) → JF (Γ , Δ ++ʳ Φ) (Γ , Φ ▷ᵇ rt)
 
   -- Within a method, the return type rt is fixed.
 
@@ -113,7 +113,7 @@ module _ (Σ : Sig) where
     data FC (Λ : Labels) : (Ξ : MT) → Set where
       -- Ends:
       fcGoto   : ∀{Ξ} (l : Ξ ∈ Λ) → FC Λ Ξ           -- goto join point (same Ξ)
-      fcReturn : ∀{Γ Φ}           → FC Λ (Γ , Φ ▷ᵗ rt) -- return from function (stack is destroyed)
+      fcReturn : ∀{Γ Φ}           → FC Λ (Γ , Φ ▷ᵇ rt) -- return from function (stack is destroyed)
       -- Branching:
       fcIfElse : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (fc fc' : FC Λ (Γ , Φ')) → FC Λ (Γ , Φ)
       -- Label definition
@@ -190,7 +190,7 @@ module _ (Σ : Sig) where
 
       compileExp : ∀{Γ t}
         (e : Exp Σ Γ t)          {Λ Φ}
-        (k : □ (FC' (Γ , Φ ▷ᵗ t)) Λ)
+        (k : □ (FC' (Γ , Φ ▷ᵇ t)) Λ)
         → FC' (Γ , Φ) Λ
       compileExp (eConst v)  k = fcConst v (k !)
       compileExp (eVar x)    k = fcLoad x (k !)

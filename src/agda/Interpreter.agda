@@ -323,7 +323,7 @@ module Interpret {Σ : Sig} (prg : Program Σ) where
 
       -- Executing a single statement.
 
-      evalStm : ∀{Γ rt i mt} (s : Stm Σ rt Γ mt) → Eval i rt Γ (Γ ▷ mt) ⊤
+      evalStm : ∀{Γ rt i t} (s : Stm Σ rt Γ t) → Eval i rt Γ (Γ ▷ t) ⊤
 
       evalStm (sReturn e) = throwError =<< evalExp e
       evalStm (sExp e)    = _ <$> evalExp e
