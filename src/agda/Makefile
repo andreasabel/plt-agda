@@ -14,7 +14,7 @@ lab2 : lab2.agda $(agdafiles)
 # Otherwise infinite loop here...
 
 test : lab2
-	../haskell/run-testsuite.sh
+	./run-testsuite.sh
 
 
 test-local : lab2
