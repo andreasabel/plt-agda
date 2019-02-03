@@ -56,6 +56,9 @@ data Res
   | Cont
 
 -- | Execute from left to right until a 'Ret' is returned.
+instance Semigroup (Eval Res) where
+  (<>) = semicolon
+
 instance Monoid (Eval Res) where
   mempty  = return Cont
   mappend = semicolon
