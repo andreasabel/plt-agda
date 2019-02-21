@@ -97,10 +97,10 @@ module _ (Σ : Sig) where
   -- Single jump-free instruction
 
   data JF : (Ξ Ξ' : MT) → Set where
-    stackI  : ∀{Γ Φ Φ'} (j : StackI Φ Φ') → JF (Γ , Φ) (Γ , Φ')
-    storeI  : ∀{Γ Φ Φ'} (j : StoreI Γ Φ Φ') → JF (Γ , Φ) (Γ , Φ')
+    stackI  : ∀{Γ Φ Φ'} (j   : StackI   Φ Φ') → JF (Γ , Φ) (Γ , Φ')
+    storeI  : ∀{Γ Φ Φ'} (j   : StoreI Γ Φ Φ') → JF (Γ , Φ) (Γ , Φ')
     scopeI  : ∀{Γ Γ' Φ} (adm : AdmScope Γ Γ') → JF (Γ , Φ) (Γ' , Φ)
-    call    : ∀{Γ Φ Δ rt} (f :       funType Δ rt ∈ Σ) → JF (Γ , Δ ++ʳ Φ) (Γ , Φ ▷ᵇ rt)
+    call    : ∀{Γ Φ Δ rt} (f : funType Δ rt ∈ Σ)       → JF (Γ , Δ ++ʳ Φ) (Γ , Φ ▷ᵇ rt)
     builtin : ∀{Γ Φ Δ rt} (b : Builtin (funType Δ rt)) → JF (Γ , Δ ++ʳ Φ) (Γ , Φ ▷ᵇ rt)
 
   -- Within a method, the return type rt is fixed.

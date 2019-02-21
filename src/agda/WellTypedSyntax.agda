@@ -145,16 +145,16 @@ module _ (Σ : Sig) (Γ : Cxt) where
 module _ (Σ : Sig) (returnType : Type) where
   mutual
     data Stm (Γ : Cxt) : Type → Set where
-      sReturn : (e : Exp Σ Γ returnType)                   → Stm Γ void
-      sExp    : ∀{t} (e : Exp Σ Γ t)                       → Stm Γ void
-      sInit   : ∀{t} (e : Maybe (Exp` Σ Γ t))              → Stm Γ (` t)
+      sReturn : (e : Exp Σ Γ returnType)                   → Stm Γ void   -- return e;
+      sExp    : ∀{t} (e : Exp Σ Γ t)                       → Stm Γ void   -- e;
+      sInit   : ∀{t} (e : Maybe (Exp` Σ Γ t))              → Stm Γ (` t)  -- t x = e;  OR:  t x;
       -- sDecls has been desugared into sInits.
-      sBlock  : ∀{Δ} (ss : Stms (List⁺.toList Γ) [] Δ)     → Stm Γ void
+      sBlock  : ∀{Δ} (ss : Stms (List⁺.toList Γ) [] Δ)     → Stm Γ void   -- { ss }
       -- The bodies of sWhile and sIfElse do not permit scope extensions here.
       -- The type checker will possibly insert sBlock constructors to ensure
       -- no scope extension happens.
-      sWhile  : (e : Exp` Σ Γ bool) (s : Stm Γ void)    → Stm Γ void
-      sIfElse : (e : Exp` Σ Γ bool) (s s' : Stm Γ void) → Stm Γ void
+      sWhile  : (e : Exp` Σ Γ bool) (s : Stm Γ void)    → Stm Γ void      -- while (e) s
+      sIfElse : (e : Exp` Σ Γ bool) (s s' : Stm Γ void) → Stm Γ void      -- if (e) s else s'
 
     -- We expose the top block Δ, which can be extended by statements.
 

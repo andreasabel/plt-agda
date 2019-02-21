@@ -41,17 +41,17 @@ tick m = IOT.exec' cTick λ _ → m
 -- Increment and decrement for int and double.
 
 incrDecr : ∀ {t} → IncrDecr t → Val` t → Val` t
-incrDecr (incr int)    i = i + + 1
-incrDecr (decr int)    i = i - + 1
+incrDecr (incr int)    i = i Integer.+ + 1
+incrDecr (decr int)    i = i Integer.- + 1
 incrDecr (incr double) d = d +ᵈ 1ᵈ
 incrDecr (decr double) d = d -ᵈ 1ᵈ
 
 -- Division by zero is not handled.
 
 arithmetic : ∀ {t} (op : ArithOp t) (v w : Val` t) → Val` t
-arithmetic (plus  int)    i j  = i + j
-arithmetic (minus int)    i j  = i - j
-arithmetic (times int)    i j  = i * j
+arithmetic (plus  int)    i j  = i Integer.+ j
+arithmetic (minus int)    i j  = i Integer.- j
+arithmetic (times int)    i j  = i Integer.* j
 arithmetic (div   int)    i j  = Integer.div i j
 arithmetic (plus  double) d d' = d +ᵈ d'
 arithmetic (minus double) d d' = d -ᵈ d'
