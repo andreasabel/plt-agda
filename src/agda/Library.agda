@@ -17,7 +17,7 @@ open import Data.Bool.Base    public using (Bool; true; false; _xor_; not; if_th
 open import Data.Char.Base    public using (Char)
 open import Data.Empty        public using (⊥)
 -- open import Data.Fin          public using (Fin; zero; suc)
-open import Data.Integer.Base public using (ℤ; -[1+_]; +_; _+_; _-_; _*_)
+open import Data.Integer.Base public using (ℤ; -[1+_]; +_) -- ; _+_; _-_; _*_)
 open import Data.List.Base    public using (List; []; _∷_; _++_) hiding (module List)
 open import Data.List.Membership.Propositional public using (_∈_; _∉_)
 open import Data.List.All public using ([]; _∷_)
@@ -26,7 +26,9 @@ open import Data.List.NonEmpty public using (List⁺; _∷_; _∷⁺_) hiding (m
 open import Data.List.Relation.Sublist.Propositional public using (_⊆_) renaming (skip to ⊆-skip; lookup to ⊆-lookup)
 open import Data.List.Relation.Sublist.Propositional.Properties public using (⊆-refl; ⊆-trans) -- renaming (⊆-reflexive to ⊆-refl)
 open import Data.Maybe.Base   public using (Maybe; nothing; just)
--- open import Data.Nat          public using (ℕ; zero; suc) renaming (_≤′_ to _≤_; ≤′-refl to ≤-refl)
+open import Data.Nat          public using (ℕ; zero; suc; _+_; _≤_; s≤s)
+-- renaming (_≤′_ to _≤_; ≤′-refl to ≤-refl)
+open import Data.Nat.Properties public using (+-identityʳ)
 open import Data.Product      public using (∃; ∃₂; _×_; _,_; proj₁; proj₂; map₂)
   renaming (map to ∃-map)
 open import Data.String.Base  public using (String)
@@ -50,7 +52,7 @@ open import Size public
 -- module ∃ = Data.Product -- bad idea, Agda's printer cannot deal with it
 
 module Bool where
-  open import Data.Bool.Base public using (_≟_)
+  open import Data.Bool public using (_≟_)
 
   _==_ : (b b' : Bool) → Bool
   b == b' = ⌊ b ≟ b' ⌋
