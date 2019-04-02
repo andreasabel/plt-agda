@@ -37,7 +37,7 @@ Labels = List LabelType
 -- We use more generally sublists (_⊆_), even though we need.
 
 wk1 : ∀{lt} {Λ : Labels} → Λ ⊆ lt ∷ Λ
-wk1 = ⊆-skip !
+wk1 = ⊆-skip {A = LabelType} _ !
 
 □ : (F : Labels → Set) → Labels → Set
 □ F Λ = ∀ {Λ'} (ρ : Λ ⊆ Λ') → F Λ'
