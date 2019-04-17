@@ -13,10 +13,14 @@ import Data.Maybe
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.List.NonEmpty (NonEmpty((:|)))
+import qualified Data.List.NonEmpty as NEList
 
 import CPP.Abs
 import CPP.Print
 import CPP.ErrM
+
+type NEList = NEList.NonEmpty
 
 -- | The signature maps function identifiers to the list of their parameters and the return type.
 type Sig     = Map Id FunType
@@ -29,7 +33,7 @@ data St = St
   }
 
 -- | The local context is a stack of typing environments.
-type Cxt   = [Block]
+type Cxt   = NEList Block
 type Block = Map Id Type
 
 -- | Type errors are just strings.
@@ -57,7 +61,7 @@ typecheck prg@(PDefs defs) = do
     Nothing -> return ()
     Just f  -> Bad $ "function " ++ printTree f ++ " is defined twice"
   -- Prepare the initial state.
-  let st = St [] $ error "no return type set"
+  let st = error "no state yet"
   -- Run the type checker.
   case runExcept (evalStateT (runReaderT (checkProgram prg) (Map.fromList sig)) st) of
     Left s   -> Bad s
@@ -78,7 +82,7 @@ checkMain = (Map.lookup (Id "main") <$> ask) >>= \case
 checkDef :: Def -> Check ()
 checkDef (DFun t f args ss) = do
   -- Set initial context and return type.
-  put $ St [Map.empty] t
+  put $ St (Map.empty :| []) t
   -- Add function parameters to the context.
   mapM_ (\ (ADecl t x) -> newVar x t) args
   -- Check function body.
@@ -185,22 +189,22 @@ newVar :: Id -> Type -> Check ()
 newVar x t = do
   when (t == Type_void) $
     throwError $ "type void of variable " ++ printTree x ++ " is illegal"
-  (b:bs) <- gets stCxt
+  (b :| bs) <- gets stCxt
   let (found, b') = Map.insertLookupWithKey (\ _ t _ -> t) x t b
   unless (isNothing found) $ throwError $ "duplicate variable binding " ++ printTree x
-  modifyCxt $ const (b':bs)
+  modifyCxt $ const (b' :| bs)
 
 -- | Add a new block and pop it afterwards
 inNewBlock :: Check a -> Check a
 inNewBlock cont = do
-  modifyCxt (Map.empty :)
+  modifyCxt $ NEList.cons Map.empty
   r <- cont
-  modifyCxt tail
+  modifyCxt $ NEList.fromList . NEList.tail
   return r
 
 -- | Lookup the type of a variable in the context.
 lookupVar :: Id -> Check Type
-lookupVar x = loop =<< gets stCxt
+lookupVar x = loop . NEList.toList =<< gets stCxt
   where
   loop []     = throwError $ "unbound variable " ++ printTree x
   loop (b:bs) = case Map.lookup x b of
