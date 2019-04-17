@@ -23,9 +23,11 @@ open import Data.List.Membership.Propositional public using (_∈_; _∉_)
 open import Data.List.All public using ([]; _∷_)
 open import Data.List.Any public using (here; there)
 open import Data.List.NonEmpty public using (List⁺; _∷_; _∷⁺_) hiding (module List⁺)
-open import Data.List.Relation.Binary.Sublist.Propositional public using (_⊆_) renaming (_∷ʳ_ to ⊆-skip; lookup to ⊆-lookup)
-open import Data.List.Relation.Binary.Sublist.Propositional.Properties public
-  using () renaming (refl to ⊆-refl; trans to ⊆-trans) -- renaming (⊆-reflexive to ⊆-refl)
+open import Data.List.Relation.Binary.Sublist.Propositional public
+  using (_⊆_; ⊆-refl; ⊆-trans)
+  renaming (_∷ʳ_ to ⊆-skip; lookup to ⊆-lookup)
+-- open import Data.List.Relation.Binary.Sublist.Propositional.Properties public
+--   using () renaming (refl to ⊆-refl; trans to ⊆-trans) -- renaming (⊆-reflexive to ⊆-refl)
 open import Data.Maybe.Base   public using (Maybe; nothing; just)
 open import Data.Nat          public using (ℕ; zero; suc; _+_; _≤_; s≤s)
 -- renaming (_≤′_ to _≤_; ≤′-refl to ≤-refl)
