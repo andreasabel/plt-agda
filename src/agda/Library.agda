@@ -26,8 +26,9 @@ open import Data.List.NonEmpty public using (List⁺; _∷_; _∷⁺_) hiding (m
 open import Data.List.Relation.Binary.Sublist.Propositional public
   using (_⊆_; []; _∷_; ⊆-refl; ⊆-trans)
   renaming (_∷ʳ_ to ⊆-skip; lookup to ⊆-lookup)
--- open import Data.List.Relation.Binary.Sublist.Propositional.Properties public
---   using () renaming (refl to ⊆-refl; trans to ⊆-trans) -- renaming (⊆-reflexive to ⊆-refl)
+open import Data.List.Relation.Binary.Sublist.Propositional.Properties public
+  using (⊆-trans-idˡ; ⊆-trans-idʳ; ⊆-trans-assoc)
+
 open import Data.Maybe.Base   public using (Maybe; nothing; just)
 open import Data.Nat          public using (ℕ; zero; suc; _+_; _≤_; s≤s)
 -- renaming (_≤′_ to _≤_; ≤′-refl to ≤-refl)
@@ -43,7 +44,7 @@ open import Level             public using (_⊔_)
 
 open import IO.Primitive      public using (IO)
 
-open import Relation.Binary.PropositionalEquality public using (_≡_; refl; cong; subst)
+open import Relation.Binary.PropositionalEquality public using (_≗_; _≡_; refl; cong; subst)
 open import Relation.Binary public using (Decidable; Rel)
 open import Relation.Nullary public using (¬_; Dec; yes; no)
 open import Relation.Nullary.Decidable public using (⌊_⌋)
