@@ -1,14 +1,13 @@
 module Parser where
 
-open import Library
+open import Library using (List; Char; String)
 open import AST using (Program)
 
 {-# FOREIGN GHC import qualified Data.Text  #-}
 
-{-# FOREIGN GHC import CPP.Abs  #-}
-{-# FOREIGN GHC import CPP.ErrM #-}
-{-# FOREIGN GHC import CPP.Lex  #-}
-{-# FOREIGN GHC import CPP.Par  #-}
+{-# FOREIGN GHC import CPP.Abs  (Program)           #-}
+{-# FOREIGN GHC import CPP.ErrM (Err (..))          #-}
+{-# FOREIGN GHC import CPP.Par  (myLexer, pProgram) #-}
 
 -- Error monad of BNFC
 

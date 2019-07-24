@@ -13,8 +13,8 @@ testsuite : lab2
 lab2 : lab2.hs TypeChecker.hs Interpreter.hs CPP/Test
 	ghc --make lab2.hs -o lab2
 
-CPP/Test.hs CPP/Lex.x CPP/Par.y CPP/Abs.hs CPP/Print.hs : CPP.cf
-	bnfc --haskell -d $<
+CPP/Test.hs CPP/Lex.x CPP/Par.y CPP/Abs.hs CPP/Print.hs CPP/AST.agda : CPP.cf Makefile
+	bnfc --haskell --agda -d $<
 
 CPP/Par.hs: CPP/Par.y
 	happy -gcai $<
