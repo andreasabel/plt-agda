@@ -1,35 +1,37 @@
-module Library.AllExt where
+module Library.AllExt {ℓa} {A : Set ℓa} where
 
 open import Library
 open import Data.List.Relation.Binary.Sublist.Propositional using (_∷ʳ_)
 open import Relation.Binary.HeterogeneousEquality as H using (_≅_; refl)
 
-module _ {ℓa ℓp} {A : Set ℓa} (P : A → Set ℓp) where
-
+private
   variable
     a a'  : A
     xs ys : List A
     τ τ'  : xs ⊆ ys
-    p     : P a
-    ps    : List.All P xs
 
-  -- Insertion of elements in to a List.All
+-- Insertion of elements into a List.All
 
-  data AllExt : (τ : xs ⊆ ys) → Set ℓp where
-    []   : AllExt []
-    lift : AllExt τ → AllExt (refl {x = a} ∷ τ)
-    _∷_  : P a → AllExt τ → AllExt (a ∷ʳ τ)
+data AllExt {ℓp} (P : A → Set ℓp) : (τ : xs ⊆ ys) → Set ℓp where
+  []   : AllExt P []
+  lift : AllExt P τ → AllExt P (refl {x = a} ∷ τ)
+  _∷_  : P a → AllExt P τ → AllExt P (a ∷ʳ τ)
 
-  variable
-    es es' es₁ es₂ es₃ : AllExt τ
+module _ {ℓp} {P : A → Set ℓp} where
 
-  hcong-lift : {es : AllExt τ} {es' : AllExt τ'}
+  private
+    variable
+      p     : P a
+      ps    : List.All P xs
+      es es' es₁ es₂ es₃ : AllExt P τ
+
+  hcong-lift : {es : AllExt P τ} {es' : AllExt P τ'}
     → τ ≡ τ'
     → es ≅ es'
     → lift {a = a} es ≅ lift {a = a} es'
   hcong-lift refl refl = refl
 
-  hcong-∷ : {es : AllExt τ} {es' : AllExt τ'}
+  hcong-∷ : {es : AllExt P τ} {es' : AllExt P τ'}
     → τ ≡ τ'
     → es ≅ es'
     → (p AllExt.∷ es) ≅ (p AllExt.∷ es')
@@ -38,11 +40,11 @@ module _ {ℓa ℓp} {A : Set ℓa} (P : A → Set ℓp) where
   -- Category AllExt is a decoration of the morphisms of _⊆_.
   -- Decorated morphisms are closed under identity and composition.
 
-  AllExt-id : AllExt (⊆-refl {x = xs})
+  AllExt-id : AllExt P (⊆-refl {x = xs})
   AllExt-id {xs = []    } = []
   AllExt-id {xs = x ∷ xs} = lift AllExt-id
 
-  AllExt-comp : AllExt τ → AllExt τ' → AllExt (⊆-trans τ τ')
+  AllExt-comp : AllExt P τ → AllExt P τ' → AllExt P (⊆-trans τ τ')
   AllExt-comp ps        (q ∷ qs)  = q ∷ AllExt-comp ps qs
   AllExt-comp (p ∷ ps)  (lift qs) = p ∷ AllExt-comp ps qs
   AllExt-comp (lift ps) (lift qs) = lift (AllExt-comp ps qs)
@@ -84,7 +86,7 @@ module _ {ℓa ℓp} {A : Set ℓa} (P : A → Set ℓp) where
   --
   -- There is a functor from AllExt into the subcategory All P of Set.
 
-  extendAll : ∀{τ : xs ⊆ ys} → AllExt τ → List.All P xs → List.All P ys
+  extendAll : ∀{τ : xs ⊆ ys} → AllExt P τ → List.All P xs → List.All P ys
   extendAll []       ps       = ps
   extendAll (lift es) (p ∷ ps) = p ∷ extendAll es ps
   extendAll  (p ∷ es) ps       = p ∷ extendAll es ps
