@@ -51,6 +51,8 @@ open import Relation.Nullary.Decidable public using (⌊_⌋)
 
 open import Size public
 
+pattern here! = here refl
+
 -- Qualified imports:
 
 -- module ∃ = Data.Product -- bad idea, Agda's printer cannot deal with it

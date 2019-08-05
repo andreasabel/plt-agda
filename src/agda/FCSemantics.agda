@@ -1,5 +1,6 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 
-open import Library renaming (⊆-lookup to weakLabel; ⊆-refl to !)
+open import Library renaming (⊆-lookup to weakLabel) -- ; ⊆-refl to !)
 open import WellTypedSyntax
 open import Value
 open import Environment
@@ -21,6 +22,10 @@ ReturnVal (` t) v (nothing ∷ _) = ⊥
 ReturnVal void _ _ = ⊤
 
 --
+
+-- variable
+--   Σ : Sig
+--   rt : Type
 
 module _ (Σ : Sig) (rt : Type) where
 
@@ -44,42 +49,58 @@ module _ (Σ : Sig) (rt : Type) where
 
   lookupLS' : ∀ {Λ Λ' Ξ} (ƛ : LS Λ) (l : Ξ ∈ Λ) (w : Λ ⊆ Λ') → FC Σ rt Λ' Ξ
   lookupLS' (fc ∷ ƛ) (here refl) w = {!wkFC w fc!}   -- need weakening for FC
-  lookupLS' (fc ∷ ƛ) (there l) w = lookupLS' ƛ l (⊆-trans (⊆-skip !) w)
+  lookupLS' (fc ∷ ƛ) (there l) w = lookupLS' ƛ l (⊆-trans (⊆-skip _ ⊆-refl) w)
 
   lookupLS : ∀ {Λ Ξ} (ƛ : LS Λ) (l : Ξ ∈ Λ) → FC Σ rt Λ Ξ
-  lookupLS ƛ l = lookupLS' ƛ l !
+  lookupLS ƛ l = lookupLS' ƛ l ⊆-refl
 
   -- Big-step semantics of flow charts.  TODO: finish.
 
-  data FCEval {Λ : Labels} (ƛ : LS Λ) (v : Val rt) : {Ξ : MT} (ξ : MS Ξ) → FC Σ rt Λ Ξ → Set where
+  mutual
 
-    evReturn : ∀ {Γ Φ} {γ : Env Γ} {s : Frame (Φ ▷ᵇ rt)}
-         → ReturnVal rt v s
-         → FCEval ƛ v (γ , s) fcReturn
+    data FCEval {Λ : Labels} (ƛ : LS Λ) (v : Val rt) : {Ξ : MT} (ξ : MS Ξ) → FC Σ rt Λ Ξ → Set where
 
-    -- Goto l amounts to fetching the flowchart corresponding to l from ƛ and continue there.
+      evReturn : ∀ {Γ Φ} {γ : Env Γ} {s : Frame (Φ ▷ᵇ rt)}
+           → ReturnVal rt v s
+           → FCEval ƛ v (γ , s) fcReturn
 
-    evGoto : ∀{Ξ l}{ξ : MS Ξ}
-         → FCEval ƛ v ξ (lookupLS ƛ l)
-         → FCEval ƛ v ξ (fcGoto l)
+      -- Goto l amounts to fetching the flowchart corresponding to l from ƛ and continue there.
 
-    -- let and fix define labels.
-    -- We associate them to the corresponding fc in ƛ.
+      evGoto : ∀{Ξ l}{ξ : MS Ξ}
+           -- → FCEval ƛ v ξ (lookupLS ƛ l)
+           → FCGoto v ξ ƛ l
+           → FCEval ƛ v ξ (fcGoto l)
 
-    evLet : ∀{Ξ Ξ'}{ξ : MS Ξ}{fc : FC Σ rt Λ Ξ'} {fc'}
-         → FCEval (fc ∷ ƛ) v ξ fc'
-         → FCEval ƛ v ξ (fcLet fc fc')
+      -- let and fix define labels.
+      -- We associate them to the corresponding fc in ƛ.
 
-    evFix : ∀{Ξ} {ξ : MS Ξ} {fc}
-         → FCEval (fcFix fc ∷ ƛ) v ξ fc
-         → FCEval ƛ v ξ (fcFix fc)
+      evLet : ∀{Ξ Ξ'}{ξ : MS Ξ}{fc : FC Σ rt Λ Ξ'} {fc'}
+           → FCEval (fc ∷ ƛ) v ξ fc'
+           → FCEval ƛ v ξ (fcLet fc fc')
 
-    -- Single jump-free instruction.
+      evFix : ∀{Ξ} {ξ : MS Ξ} {fc}
+           → FCEval (fcFix fc ∷ ƛ) v ξ fc
+           → FCEval ƛ v ξ (fcFix fc)
 
-    evExec : ∀{Ξ Ξ'} {ξ ξ'} {jf : JF Σ Ξ Ξ'} {fc}
-         → JFEval ξ ξ' jf
-         → FCEval ƛ v ξ' fc
-         → FCEval ƛ v ξ (fcExec jf fc)
+      -- Single jump-free instruction.
+
+      evExec : ∀{Ξ Ξ'} {ξ ξ'} {jf : JF Σ Ξ Ξ'} {fc}
+           → JFEval ξ ξ' jf
+           → FCEval ƛ v ξ' fc
+           → FCEval ƛ v ξ (fcExec jf fc)
+
+    -- Due to scoping invariants, FCGoto l can remove newer label bindings from ƛ.
+    -- (Observation by Alexander Fuhs.)  Thus, weakening of FCs is not needed.
+
+    data FCGoto (v : Val rt) {Ξ : MT} (ξ : MS Ξ) : {Λ : Labels} (ƛ : LS Λ) (l : Ξ ∈ Λ) → Set where
+
+      gotoHere : ∀{Λ}{ƛ : LS Λ}{fc : FC Σ rt Λ Ξ}
+        → FCEval ƛ v ξ fc
+        → FCGoto v ξ (fc ∷ ƛ) here!
+
+      gotoThere : ∀{Λ}{ƛ : LS Λ}{Ξ′}{fc : FC Σ rt Λ Ξ′}{l : Ξ ∈ Λ}
+        → FCGoto v ξ ƛ l
+        → FCGoto v ξ (fc ∷ ƛ) (there l)
 
 
 
