@@ -1,23 +1,40 @@
+------------------------------------------------------------------------
 -- Simply-typed lambda terms with globally unique variables
+-- (both bound and free ones).
+------------------------------------------------------------------------
 
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; subst; subst₂; subst₃; module ≡-Reasoning)
+{-# OPTIONS --without-K --safe #-}
+
+module UniqueBoundVariables (Base : Set) where
+
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong; subst; module ≡-Reasoning)
 open ≡-Reasoning
 
 open import Data.List using (List; []; _∷_; [_])
 open import Data.List.All using (Null; [])
-open import Data.List.Membership.Propositional
--- open import Data.List.Relation.Unary.Membership.Propositional
-open import Data.List.Relation.Binary.Sublist.Propositional
-open import Data.List.Relation.Binary.Sublist.Propositional.Properties
-open import Data.List.Relation.Binary.Sublist.Propositional.Properties.WithK
--- open import Data.List.Relation.Binary.Sublist.Setoid.Properties
+open import Data.List.Membership.Propositional using (_∈_)
+open import Data.List.Relation.Binary.Sublist.Propositional using
+  ( _⊆_; []; _∷_; _∷ʳ_
+  ; ⊆-refl; ⊆-trans; minimum
+  ; from∈; to∈; lookup
+  ; ⊆-pushoutˡ; RawPushout
+  ; Disjoint; DisjointUnion; Disjoint→DisjointUnion; DisjointUnion→Disjoint
+  ; separateˡ; Separation
+  )
+open import Data.List.Relation.Binary.Sublist.Propositional.Properties using
+  ( ∷ˡ⁻
+  ; ⊆-trans-assoc
+  ; from∈∘to∈; from∈∘lookup; lookup-⊆-trans
+  ; ⊆-pushoutˡ-is-wpo
+  ; Disjoint-sym; DisjointUnion-inj₁; DisjointUnion-inj₂; DisjointUnion-[]ʳ
+  ; weakenDisjoint; weakenDisjointUnion; shrinkDisjointˡ
+  ; disjoint⇒disjoint-to-union; DisjointUnion-fromAny∘toAny-∷ˡ⁻
+  ; equalize-separators
+  )
 
 open import Data.Product using (_,_; proj₁; proj₂)
 
 -- Simple types over a set Base of base types.
-
-postulate
-  Base : Set
 
 data Ty : Set where
   base : (o : Base) → Ty
@@ -260,7 +277,7 @@ dB→Named {Δ = Δ} {a = a ⇒ b} (abs e) with
   z       = to∈ zδ
   [a]⊆Γ   = from∈ z
   δ̇       = ∷ˡ⁻ zδ
-  [a]⊆Γ⊎δ =  DisjointUnion-fromAny∘toAny-∷ˡ⁻ zδ
+  [a]⊆Γ⊎δ = DisjointUnion-fromAny∘toAny-∷ˡ⁻ zδ
   [a]⊆aΔ  : [ a ] ⊆ (a ∷ Δ)
   [a]⊆aΔ  = refl ∷ minimum _
   eq      : ⊆-trans [a]⊆aΔ zδ ≡ [a]⊆Γ
