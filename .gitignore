@@ -4,5 +4,6 @@
 *.o
 a.out
 lab2
+Bug*.agda
 MAlonzo
 /src/haskell/CPP/
