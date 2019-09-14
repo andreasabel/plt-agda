@@ -86,16 +86,6 @@ module List where
 
     -- Update function for All
 
-    data Update {a p} {A : Set a} {P : A → Set p} {x} (v : P x)
-      : ∀ {xs} (x∈xs : x ∈ xs) (vs vs' : All P xs) → Set where
-
-      here : ∀{xs} {vs : All P xs} {v₀ : P x}
-        → Update v (here refl) (v₀ ∷ vs) (v ∷ vs)
-
-      there : ∀{xs} {x∈xs : x ∈ xs} {vs vs' : All P xs} {y} {w : P y}
-        → Update v x∈xs vs vs'
-        → Update v (there x∈xs) (w ∷ vs) (w ∷ vs')
-
     data UpdateAt {a p r} {A : Set a} {P : A → Set p} {x} (R : Rel (P x) r)
       : ∀ {xs} (x∈xs : x ∈ xs) (vs vs' : All P xs) → Set r where
 
@@ -107,11 +97,16 @@ module List where
         → UpdateAt R x∈xs vs vs'
         → UpdateAt R (there x∈xs) (w ∷ vs) (w ∷ vs')
 
+    Update : ∀ {a p} {A : Set a} {P : A → Set p} {x xs}
+             (v : P x) (x∈xs : x ∈ xs) (vs vs' : All P xs) → Set p
+    Update v = UpdateAt (λ _ → (v ≡_))
+
 open List.All public using (here; there)
 
 infixl 5 _++ʳ_
 
--- Reverse append.
+-- Reverse append.  (Soon in the std-lib as _ʳ++_.)
+
 _++ʳ_ : ∀ {a} {A : Set a} → List A → List A → List A
 xs ++ʳ ys = List.foldl (λ rev x → x ∷ rev) ys xs
 
@@ -123,10 +118,10 @@ module _ {a p} {A : Set a} {P : A → Set p} where
     (vs : List.All P xs)
     (x∈xs : x ∈ xs)
     (v : P x)
-    (vs' : List.All P xs) → Set
+    (vs' : List.All P xs) → Set p
   vs [ x∈xs ≔ v ]↝ vs' = List.All.Update v x∈xs vs vs'
 
-  -- Membership in List.All
+  -- Membership in List.All  (In std-lib v1.2 as _[_]=_.)
 
   data _↤_∈_ {x} (v : P x) : ∀ {xs} → x ∈ xs → List.All P xs → Set where
 
