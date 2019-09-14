@@ -41,7 +41,7 @@ _∙_≡_ : ∀{Γ} (γ : Env Γ) {t} (v : Entry` t) (γ' : Env (Γ ▷ ` t)) �
 
 _⊢_≔_⇓_ : ∀ {Γ} (γ : Env Γ) {t} (x : Var Γ t) (v : Val` t) (γ′ : Env Γ) → Set
 γ ⊢ var Δ∈Γ t∈Δ ≔ v ⇓ γ′ = -- UpdateEnv v x γ γ′
-  List.All.UpdateWith (List.All.UpdateWith (λ _ → just v ≡_) t∈Δ) Δ∈Γ γ γ′
+  List.All.UpdateAt (List.All.UpdateAt (λ _ → just v ≡_) t∈Δ) Δ∈Γ γ γ′
 
 -- Evaluation of built-ins (non-deterministic).
 -- A read can return any value of the correct type (except undefined).

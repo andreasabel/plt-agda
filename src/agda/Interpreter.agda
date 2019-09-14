@@ -86,7 +86,7 @@ lookupVar (var Δ∈Γ t∈Δ) γ = lookup (lookup γ Δ∈Γ) t∈Δ
   where open List.All
 
 updateVar : ∀{Γ t} (x : Var Γ t) (v : Val` t) (γ : Env Γ) → Env Γ
-updateVar (var Δ∈Γ t∈Δ) v = updateWith Δ∈Γ (updateWith t∈Δ (λ _ → just v))
+updateVar (var Δ∈Γ t∈Δ) v = updateAt Δ∈Γ (updateAt t∈Δ (λ _ → just v))
   where open List.All
 
 

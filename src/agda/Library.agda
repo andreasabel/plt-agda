@@ -20,8 +20,8 @@ open import Data.Empty        public using (⊥)
 open import Data.Integer.Base public using (ℤ; -[1+_]; +_) -- ; _+_; _-_; _*_)
 open import Data.List.Base    public using (List; []; _∷_; _++_) hiding (module List)
 open import Data.List.Membership.Propositional public using (_∈_; _∉_)
-open import Data.List.All public using ([]; _∷_)
-open import Data.List.Any public using (here; there)
+open import Data.List.Relation.Unary.All public using ([]; _∷_; updateAt)
+open import Data.List.Relation.Unary.Any public using (here; there)
 open import Data.List.NonEmpty public using (List⁺; _∷_; _∷⁺_) hiding (module List⁺)
 open import Data.List.Relation.Binary.Sublist.Propositional public
   using (_⊆_; []; _∷_; ⊆-refl; ⊆-trans)
@@ -96,23 +96,16 @@ module List where
         → Update v x∈xs vs vs'
         → Update v (there x∈xs) (w ∷ vs) (w ∷ vs')
 
-    data UpdateWith {a p r} {A : Set a} {P : A → Set p} {x} (R : Rel (P x) r)
+    data UpdateAt {a p r} {A : Set a} {P : A → Set p} {x} (R : Rel (P x) r)
       : ∀ {xs} (x∈xs : x ∈ xs) (vs vs' : All P xs) → Set r where
 
       here : ∀{xs} {vs : All P xs} {v v' : P x}
         → R v v'
-        → UpdateWith R (here refl) (v ∷ vs) (v' ∷ vs)
+        → UpdateAt R (here refl) (v ∷ vs) (v' ∷ vs)
 
       there : ∀{xs} {x∈xs : x ∈ xs} {vs vs' : All P xs} {y} {w : P y}
-        → UpdateWith R x∈xs vs vs'
-        → UpdateWith R (there x∈xs) (w ∷ vs) (w ∷ vs')
-
-    -- A simple, unverified implementation of UpdateWith.
-
-    updateWith : ∀ {a p} {A : Set a} {P : A → Set p} {x xs}
-      (x∈xs : x ∈ xs) (f : P x → P x) (vs : All P xs) → All P xs
-    updateWith (here refl)  f (v ∷ vs) = f v ∷ vs
-    updateWith (there x∈xs) f (v ∷ vs) = v ∷ updateWith x∈xs f vs
+        → UpdateAt R x∈xs vs vs'
+        → UpdateAt R (there x∈xs) (w ∷ vs) (w ∷ vs')
 
 open List.All public using (here; there)
 
