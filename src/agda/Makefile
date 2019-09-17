@@ -1,7 +1,7 @@
 # Makefile for PLT lab 2
 
 agda=agda
-agdafiles=Library.agda AST.agda Parser.agda WellTypedSyntax.agda TypeChecker.agda Value.agda Evaluation.agda Interpreter.agda FlowChart.agda
+agdafiles=Library.agda ../haskell/CPP/AST.agda ../haskell/CPP/Parser.agda WellTypedSyntax.agda TypeChecker.agda Value.agda Evaluation.agda Interpreter.agda FlowChart.agda
 ghcflags=--ghc-flag=-i../haskell --ghc-flag=-Wwarn
 
 .PHONY : test test-local

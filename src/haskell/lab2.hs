@@ -1,3 +1,6 @@
+import Prelude hiding (readFile)
+import Data.Text (Text)
+import Data.Text.IO (readFile)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
 
@@ -10,7 +13,7 @@ import Interpreter
 
 -- | Parse, type check, and interpret a program given by the @String@.
 
-check :: String -> IO ()
+check :: Text -> IO ()
 check s = do
   case pProgram (myLexer s) of
     Bad err  -> do

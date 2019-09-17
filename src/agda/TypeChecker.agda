@@ -9,7 +9,7 @@ open AssocList.DecidableRange _≟_
 
 -- Use qualifiers A and I for abstract and internal syntax.
 
-import AST as A
+import CPP.AST as A
 
 open import WellTypedSyntax hiding (Exp; Exp`)
 private
@@ -65,7 +65,7 @@ printError = λ where
 Name = String
 
 idToName : A.Id → Name
-idToName (A.mkId x) = String.fromList x
+idToName (A.id x) = x
 
 -- Decorating list elements with unique identifiers.
 --
@@ -188,10 +188,10 @@ open ErrorMonad {E = TypeError} using (Error; fail; ok)
 -- Conversion of types
 
 type : A.Type → Type
-type A.bool   = ` bool
-type A.int    = ` int
-type A.double = ` double
-type A.void   = void
+type A.type-bool   = ` bool
+type A.type-int    = ` int
+type A.type-double = ` double
+type A.type-void   = void
 
 -- Checking expressions
 ---------------------------------------------------------------------------

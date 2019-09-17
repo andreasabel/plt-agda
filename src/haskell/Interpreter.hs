@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Interpreter where
 

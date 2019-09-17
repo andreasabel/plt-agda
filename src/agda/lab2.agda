@@ -2,8 +2,8 @@
 module lab2 where
 
 open import Library
-open import AST    using (Program; printProgram)
-open import Parser using (Err; ok; bad; parse)
+open import CPP.AST     using (Program; printProgram)
+open import CPP.Parser  using (Err; ok; bad; parseProgram)
 open import TypeChecker using (printError; module CheckProgram)
 open import Interpreter using (runProgram)
 
@@ -14,7 +14,7 @@ import FlowChart
 
 check : String → IO ⊤
 check contents = do
-  case parse contents of λ where
+  case parseProgram contents of λ where
     (bad cs) → do
       putStrLn "SYNTAX ERROR"
       putStrLn (String.fromList cs)
