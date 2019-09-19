@@ -24,6 +24,8 @@ open import Data.List.Relation.Unary.All public using ([]; _∷_; updateAt)
 open import Data.List.Relation.Unary.Any public using (here; there)
 open import Data.List.NonEmpty public using (List⁺; _∷_; _∷⁺_) hiding (module List⁺)
 open import Data.List.Relation.Binary.Sublist.Propositional public
+  using (RawPushout; ⊆-pushoutˡ)
+open import Data.List.Relation.Binary.Sublist.Propositional public
   using (_⊆_; []; _∷_; ⊆-refl; ⊆-trans)
   renaming (_∷ʳ_ to ⊆-skip; lookup to ⊆-lookup)
 open import Data.List.Relation.Binary.Sublist.Propositional.Properties public
@@ -40,7 +42,7 @@ open import Data.Sum.Base     public using (_⊎_; inj₁; inj₂)
 open import Data.Unit.Base    public using (⊤)
 
 open import Function          public using (id; _∘_; _∘′_; _$_; case_of_)
-open import Level             public using (_⊔_)
+open import Level             public using (Level; _⊔_)
 
 open import IO.Primitive      public using (IO)
 

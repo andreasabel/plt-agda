@@ -2,9 +2,10 @@ module Library.AllExt {ℓa} {A : Set ℓa} where
 
 open import Library
 open import Data.List.Relation.Binary.Sublist.Propositional using
-  (_∷ʳ_; _∷ʳ₁_; _∷ʳ₂_; ∷-rpo; ⊆-pushoutˡ; ⊆-joinˡ; RawPushout)
+  (_∷ʳ_; _∷ʳ₁_; _∷ʳ₂_; ∷-rpo; ⊆-joinˡ)
 open import Data.List.Relation.Binary.Sublist.Propositional.Properties using ()
 open import Relation.Binary.HeterogeneousEquality as H using (_≅_; refl)
+open import Relation.Unary using () renaming (_⊆_ to _⊂_)
 
 open RawPushout
 
@@ -13,6 +14,8 @@ private
     a a'  : A
     xs ys : List A
     τ τ' σ : xs ⊆ ys
+    ℓ : Level
+    P Q : A → Set ℓ
 
 -- Insertion of elements into a List.All
 
@@ -115,6 +118,15 @@ module _ {ℓp} {P : A → Set ℓp} where
   extendAll-comp {es = p ∷ es}  {es' = lift es'} ps       = cong (p ∷_) (extendAll-comp ps)
   extendAll-comp {es = []}      {es' = []}       ps       = refl
 
+
+  -- Conversion
+
+  AllExt-map : P ⊂ Q → AllExt P τ → AllExt Q τ
+  AllExt-map f []        = []
+  AllExt-map f (lift es) = lift (AllExt-map f es)
+  AllExt-map f (p ∷ es)  = f p ∷ AllExt-map f es
+
+{-
   ---------------------------------------------------------------------------
   -- Joining two independent All-extensions
 
