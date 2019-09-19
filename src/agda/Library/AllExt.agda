@@ -126,7 +126,6 @@ module _ {ℓp} {P : A → Set ℓp} where
   AllExt-map f (lift es) = lift (AllExt-map f es)
   AllExt-map f (p ∷ es)  = f p ∷ AllExt-map f es
 
-{-
   ---------------------------------------------------------------------------
   -- Joining two independent All-extensions
 
