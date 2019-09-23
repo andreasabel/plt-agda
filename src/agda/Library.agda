@@ -50,6 +50,7 @@ open import Relation.Binary.PropositionalEquality public using (_≗_; _≡_; re
 open import Relation.Binary public using (Decidable; Rel)
 open import Relation.Nullary public using (¬_; Dec; yes; no)
 open import Relation.Nullary.Decidable public using (⌊_⌋)
+open import Relation.Unary public using (_∩_) renaming (_⊆_ to _⇒_)
 
 open import Size public
 
@@ -76,6 +77,11 @@ module Integer where
 
   postulate div : (i j : ℤ) → ℤ
   {-# COMPILE GHC div = div #-}
+
+-- Sublists.
+
+⊆-wk1 : ∀{a}{A : Set a} {x : A} {xs : List A} → xs ⊆ x ∷ xs
+⊆-wk1 = ⊆-skip _ ⊆-refl
 
 -- Lists.
 
