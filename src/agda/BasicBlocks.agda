@@ -172,28 +172,34 @@ module _ (Σ : Sig) (rt : Type) where
 
   mutual
 
-    compileStm : ∀ {Γ mt}
-        (s : Stm Σ rt Γ mt) {Λ Φ}
-        (k : CompRes (Γ ▷ mt , Φ) Λ)
-        → CompRes (Γ , Φ) Λ
+    -- Compiling a statement.
+
+    compileStm : ∀ {Γ mt Φ}
+      → Stm Σ rt Γ mt
+      → CompRes (Γ ▷ mt , Φ)
+      ⇒ CompRes (Γ , Φ)
 
     compileStm (sReturn e)       _ = compileExp e $ crBB λ ρ → bbReturn
-    compileStm (sExp e)          k = compileExp e $ crExec (stackI pop) k
-    compileStm (sInit nothing)   k = crExec (scopeI decl) k
-    compileStm (sInit (just e))  k = compileExp e $ crExec (scopeI decl) $ crExec (storeI (store vzero)) k
-    compileStm (sBlock ss)       k = crExec (scopeI newBlock) $ compileStms ss $ crExec (scopeI popBlock) k
+    compileStm (sExp e)            = compileExp e ∘ crExec (stackI pop)
+    compileStm (sInit nothing)     = crExec (scopeI decl)
+    compileStm (sInit (just e))    = compileExp e ∘ crExec (scopeI decl) ∘ crExec (storeI (store vzero))
+    compileStm (sBlock ss)         = crExec (scopeI newBlock) ∘ compileStms ss ∘ crExec (scopeI popBlock)
     compileStm (sWhile e s)      k = fix $ compileCond e (compileStm s $ crGoto here!) (crWeak wk1 k)
     compileStm (sIfElse e s₁ s₂) k = joinPoint k λ k' → compileCond e (compileStm s₁ k') (compileStm s₂ k')
 
-    compileStms : ∀{Γ Δ Δ'}
-      (ss : Stms Σ rt Γ Δ Δ') {Λ Φ}
-      → CompRes (Δ' ∷ Γ , Φ) Λ
-      → CompRes (Δ ∷ Γ , Φ) Λ
-    compileStms []       k = k
-    compileStms (s ∷ ss) k = compileStm s $ compileStms ss k
+    -- Compiling a statement list.
+
+    compileStms : ∀{Γ Δ Δ'  Φ}
+      → Stms Σ rt Γ Δ Δ'
+      → CompRes (Δ' ∷ Γ , Φ)
+      ⇒ CompRes (Δ  ∷ Γ , Φ)
+    compileStms []       = id
+    compileStms (s ∷ ss) = compileStm s ∘ compileStms ss
+
+    -- Compiling conditionals.
 
     compileCond : ∀{Γ}
-      (e : Exp` Σ Γ bool) {Λ Φ}
+      (e : Exp` Σ Γ bool) {Φ Λ}
       (kᵗ kᶠ : CompRes (Γ , Φ) Λ)
       → CompRes (Γ , Φ) Λ
     compileCond (eConst false) kᵗ kᶠ = kᶠ
@@ -211,8 +217,8 @@ module _ (Σ : Sig) (rt : Type) where
 
     compileCondOp : ∀{Γ t}
       (op   : Op t bool)
-      (e e' : Exp` Σ Γ t) {Λ Φ}
-      (kᵗ kᶠ : CompRes (Γ , Φ) Λ)  -- kt: true, kf: false
+      (e e' : Exp` Σ Γ t) {Φ Λ}
+      (kᵗ kᶠ : CompRes (Γ , Φ) Λ)
       → CompRes (Γ , Φ) Λ
 
     compileCondOp (logic and) e e' kᵗ kᶠ = joinPoint kᶠ λ kf' → compileCond e (compileCond e' kᵗ kf') kf'
@@ -228,11 +234,12 @@ module _ (Σ : Sig) (rt : Type) where
 
     -- Compiling boolean operators.
 
-    compileBoolOp : ∀{Γ t}
+    compileBoolOp : ∀{Γ t Φ}
       (op   : Op t bool)
-      (e e' : Exp` Σ Γ t) {Λ Φ}
-      (k    : CompRes (Γ , bool ∷ Φ) Λ)
-      → CompRes (Γ , Φ) Λ
+      (e e' : Exp` Σ Γ t)
+      → CompRes (Γ , bool ∷ Φ)  -- Continuation expects a bool on the stack.
+      ⇒ CompRes (Γ , Φ)
+
     compileBoolOp op e e' k =
       joinPoint k λ k' →
       compileCondOp op e e'
@@ -241,64 +248,64 @@ module _ (Σ : Sig) (rt : Type) where
 
     -- Compiling expressions.
 
-    compileExp : ∀{Γ t}
-      (e : Exp Σ Γ t)          {Λ Φ}
-      (k : CompRes (Γ , Φ ▷ᵇ t) Λ)
-      → CompRes (Γ , Φ) Λ
-    compileExp (eConst v)            k = crExec (stackI (const v)) k
-    compileExp (eVar x)              k = crExec (storeI (load x)) k
-    compileExp (eAss x e)            k = compileExp e $ crExec (stackI dup) $ crExec (storeI (store x)) k
+    compileExp : ∀{Γ t Φ}
+      → Exp Σ Γ t
+      → CompRes (Γ , Φ ▷ᵇ t)  -- Continuation expects a value of type t on the stack.
+      ⇒ CompRes (Γ , Φ)
 
-    compileExp (eApp f es)           k = compileExps es $ crExec (call f) k
-    compileExp (eBuiltin f es)       k = compileExps es $ crExec (builtin f) k
+    compileExp (eConst v)            = crExec (stackI (const v))
+    compileExp (eVar x)              = crExec (storeI (load x))
+    compileExp (eAss x e)            = compileExp e ∘ crExec (stackI dup) ∘ crExec (storeI (store x))
 
-    compileExp (eOp (arith op) e e') k = compileExp e $ compileExp e' $ crExec (stackI (arith op)) k
-    compileExp (eOp (cmp   op) e e') k = compileBoolOp (cmp op) e e' k
-    compileExp (eOp (logic op) e e') k = compileBoolOp (logic op) e e' k
+    compileExp (eApp f es)           = compileExps es ∘ crExec (call f)
+    compileExp (eBuiltin f es)       = compileExps es ∘ crExec (builtin f)
 
-    compileExp (eIncrDecr pre  (incr int) x)    k = crExec (storeI (incDec inc x)) $ crExec (storeI (load x)) k
-    compileExp (eIncrDecr pre  (decr int) x)    k = crExec (storeI (incDec dec x)) $ crExec (storeI (load x)) k
-    compileExp (eIncrDecr post (incr int) x)    k = crExec (storeI (load x)) $ crExec (storeI (incDec inc x)) k
-    compileExp (eIncrDecr post (decr int) x)    k = crExec (storeI (load x)) $ crExec (storeI (incDec dec x)) k
+    compileExp (eOp (arith op) e e') = compileExp e ∘ compileExp e' ∘ crExec (stackI (arith op))
+    compileExp (eOp (cmp   op) e e') = compileBoolOp (cmp op) e e'
+    compileExp (eOp (logic op) e e') = compileBoolOp (logic op) e e'
 
-    compileExp (eIncrDecr pre  (incr double) x) k =
-      crExec (storeI (load x)) $
-      crExec (stackI (const 1.0)) $
-      crExec (stackI (arith (plus double))) $
-      crExec (stackI dup) $
-      crExec (storeI (store x)) $
-      k
-    compileExp (eIncrDecr pre  (decr double) x) k =
-      crExec (storeI (load x)) $
-      crExec (stackI (const 1.0)) $
-      crExec (stackI (arith (minus double))) $
-      crExec (stackI dup) $
-      crExec (storeI (store x)) $
-      k
-    compileExp (eIncrDecr post (incr double) x) k =
-      crExec (storeI (load x)) $
-      crExec (stackI dup) $
-      crExec (stackI (const 1.0)) $
-      crExec (stackI (arith (plus double))) $
-      crExec (storeI (store x)) $
-      k
-    compileExp (eIncrDecr post (decr double) x) k =
-      crExec (storeI (load x)) $
-      crExec (stackI dup) $
-      crExec (stackI (const 1.0)) $
-      crExec (stackI (arith (minus double))) $
-      crExec (storeI (store x)) $
-      k
+    compileExp (eIncrDecr pre  (incr int) x) = crExec (storeI (incDec inc x)) ∘ crExec (storeI (load x))
+    compileExp (eIncrDecr pre  (decr int) x) = crExec (storeI (incDec dec x)) ∘ crExec (storeI (load x))
+    compileExp (eIncrDecr post (incr int) x) = crExec (storeI (load x)) ∘ crExec (storeI (incDec inc x))
+    compileExp (eIncrDecr post (decr int) x) = crExec (storeI (load x)) ∘ crExec (storeI (incDec dec x))
+
+    compileExp (eIncrDecr pre  (incr double) x)
+      = crExec (storeI (load x))
+      ∘ crExec (stackI (const 1.0))
+      ∘ crExec (stackI (arith (plus double)))
+      ∘ crExec (stackI dup)
+      ∘ crExec (storeI (store x))
+
+    compileExp (eIncrDecr pre  (decr double) x)
+      = crExec (storeI (load x))
+      ∘ crExec (stackI (const 1.0))
+      ∘ crExec (stackI (arith (minus double)))
+      ∘ crExec (stackI dup)
+      ∘ crExec (storeI (store x))
+
+    compileExp (eIncrDecr post (incr double) x)
+      = crExec (storeI (load x))
+      ∘ crExec (stackI dup)
+      ∘ crExec (stackI (const 1.0))
+      ∘ crExec (stackI (arith (plus double)))
+      ∘ crExec (storeI (store x))
+
+    compileExp (eIncrDecr post (decr double) x)
+      = crExec (storeI (load x))
+      ∘ crExec (stackI dup)
+      ∘ crExec (stackI (const 1.0))
+      ∘ crExec (stackI (arith (minus double)))
+      ∘ crExec (storeI (store x))
 
     -- Compiling expression list.
     -- First value ends up first on the stack.
 
     compileExps : ∀{Γ Δ}
-      (es : Exps Σ Γ Δ)          {Λ Φ}
-      (k : CompRes (Γ , Δ ++ʳ Φ) Λ)
-      → CompRes (Γ , Φ) Λ
-    compileExps []       k = k
-    compileExps (e ∷ es) k = compileExp e $ compileExps es $ k
+      (es : Exps Σ Γ Δ) {Λ Φ}
+      → CompRes (Γ , Δ ++ʳ Φ) Λ
+      → CompRes (Γ , Φ)       Λ
+    compileExps []       = id
+    compileExps (e ∷ es) = compileExp e ∘ compileExps es
 
 -- -}
 -- -}
