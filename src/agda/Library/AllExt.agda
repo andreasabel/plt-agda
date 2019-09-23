@@ -162,6 +162,14 @@ module _ {ℓp} {P : A → Set ℓp} where
     where
     epo = AllExt-pushout es es'
 
+  -- sliding a context extension along another extension
+
+  AllExt-slide : AllExt P τ → ∀ {zs} (σ : _ ⊆ zs) → AllExt P (leg₂ (⊆-pushoutˡ τ σ))
+  AllExt-slide []        σ          = AllExt-id
+  AllExt-slide (e  ∷ es) σ          = e ∷ (AllExt-slide es σ)
+  AllExt-slide (lift es) (y   ∷ʳ σ) = lift (AllExt-slide (lift es) σ)
+  AllExt-slide (lift es) (refl ∷ σ) = lift (AllExt-slide es σ)
+
 
 -- -}
 -- -}
