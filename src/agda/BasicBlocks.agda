@@ -122,14 +122,6 @@ module _ (Σ : Sig) (rt : Type) where
   CompRes :  (Ξ : MT) (Λ : Labels) → Set
   CompRes Ξ Λ = WithBBs (BBOrGoto Ξ) Λ
 
-  -- record CompRes (Ξ : MT) (Λ : Labels) : Set where
-  --   constructor _∙_∙_
-  --   field
-  --     {Ext} : Labels
-  --     ext   : Λ ⊆ Ext
-  --     bbs   : BBs ext
-  --     res   : BBOrGoto Ξ Ext
-
   crGoto : ∀{Ξ Λ} (l : Ξ ∈ Λ) → CompRes Ξ Λ
   crGoto l = _ ∙ (λ ρ → AllExt-id) ∙ goto λ ρ → ⊆-lookup ρ l
 
@@ -206,10 +198,12 @@ module _ (Σ : Sig) (rt : Type) where
       → CompRes (Γ , Φ) Λ
     compileCond (eConst false) kᵗ kᶠ = kᶠ
     compileCond (eConst true ) kᵗ kᶠ = kᵗ
-    compileCond (eOp op e e') kᵗ kᶠ = compileCondOp op e e' kᵗ kᶠ
-    compileCond e@(eVar _  )  kᵗ kᶠ = compileExp e $ crIfElse (eqBool true) kᵗ kᶠ
-    compileCond e@(eApp _ _)  kᵗ kᶠ = compileExp e $ crIfElse (eqBool true) kᵗ kᶠ
-    compileCond e@(eAss _ _)  kᵗ kᶠ = compileExp e $ crIfElse (eqBool true) kᵗ kᶠ
+    compileCond (eOp op e e')  kᵗ kᶠ = compileCondOp op e e' kᵗ kᶠ
+
+    compileCond e@(eVar _  )   kᵗ kᶠ = compileExp e $ crIfElse (eqBool true) kᵗ kᶠ
+    compileCond e@(eApp _ _)   kᵗ kᶠ = compileExp e $ crIfElse (eqBool true) kᵗ kᶠ
+    compileCond e@(eAss _ _)   kᵗ kᶠ = compileExp e $ crIfElse (eqBool true) kᵗ kᶠ
+
     compileCond (eIncrDecr p (incr ()) x) kᵗ kᶠ
     compileCond (eIncrDecr p (decr ()) x) kᵗ kᶠ
 
@@ -218,20 +212,21 @@ module _ (Σ : Sig) (rt : Type) where
     compileCondOp : ∀{Γ t}
       (op   : Op t bool)
       (e e' : Exp` Σ Γ t) {Λ Φ}
-      (kt kf : CompRes (Γ , Φ) Λ)  -- kt: true, kf: false
+      (kᵗ kᶠ : CompRes (Γ , Φ) Λ)  -- kt: true, kf: false
       → CompRes (Γ , Φ) Λ
 
-    compileCondOp (logic and) e e' kt kf = joinPoint kf λ kf' → compileCond e (compileCond e' kt kf') kf'
-    compileCondOp (logic or)  e e' kt kf = joinPoint kt λ kt' → compileCond e kt' (compileCond e' kt' kf)
-    compileCondOp (cmp   op)  e e' kt kf =
+    compileCondOp (logic and) e e' kᵗ kᶠ = joinPoint kᶠ λ kf' → compileCond e (compileCond e' kᵗ kf') kf'
+    compileCondOp (logic or)  e e' kᵗ kᶠ = joinPoint kᵗ λ kt' → compileCond e kt' (compileCond e' kt' kᶠ)
+    compileCondOp (cmp   op)  e e' kᵗ kᶠ =
       compileExp e  $
       compileExp e' $
-      crIfElse (cmp op) kt kf
+      crIfElse (cmp op) kᵗ kᶠ
     compileCondOp (arith (plus ()))
     compileCondOp (arith (minus ()))
     compileCondOp (arith (times ()))
     compileCondOp (arith (div ()))
 
+    -- Compiling boolean operators.
 
     compileBoolOp : ∀{Γ t}
       (op   : Op t bool)
@@ -261,15 +256,39 @@ module _ (Σ : Sig) (rt : Type) where
     compileExp (eOp (cmp   op) e e') k = compileBoolOp (cmp op) e e' k
     compileExp (eOp (logic op) e e') k = compileBoolOp (logic op) e e' k
 
-    compileExp (eIncrDecr pre  (incr int) x)    k = {!!}
-    compileExp (eIncrDecr pre  (decr int) x)    k = {!!}
-    compileExp (eIncrDecr post (incr int) x)    k = {!!}
-    compileExp (eIncrDecr post (decr int) x)    k = {!!}
+    compileExp (eIncrDecr pre  (incr int) x)    k = crExec (storeI (incDec inc x)) $ crExec (storeI (load x)) k
+    compileExp (eIncrDecr pre  (decr int) x)    k = crExec (storeI (incDec dec x)) $ crExec (storeI (load x)) k
+    compileExp (eIncrDecr post (incr int) x)    k = crExec (storeI (load x)) $ crExec (storeI (incDec inc x)) k
+    compileExp (eIncrDecr post (decr int) x)    k = crExec (storeI (load x)) $ crExec (storeI (incDec dec x)) k
 
-    compileExp (eIncrDecr pre  (incr double) x) k = {!!}
-    compileExp (eIncrDecr pre  (decr double) x) k = {!!}
-    compileExp (eIncrDecr post (incr double) x) k = {!!}
-    compileExp (eIncrDecr post (decr double) x) k = {!!}
+    compileExp (eIncrDecr pre  (incr double) x) k =
+      crExec (storeI (load x)) $
+      crExec (stackI (const 1.0)) $
+      crExec (stackI (arith (plus double))) $
+      crExec (stackI dup) $
+      crExec (storeI (store x)) $
+      k
+    compileExp (eIncrDecr pre  (decr double) x) k =
+      crExec (storeI (load x)) $
+      crExec (stackI (const 1.0)) $
+      crExec (stackI (arith (minus double))) $
+      crExec (stackI dup) $
+      crExec (storeI (store x)) $
+      k
+    compileExp (eIncrDecr post (incr double) x) k =
+      crExec (storeI (load x)) $
+      crExec (stackI dup) $
+      crExec (stackI (const 1.0)) $
+      crExec (stackI (arith (plus double))) $
+      crExec (storeI (store x)) $
+      k
+    compileExp (eIncrDecr post (decr double) x) k =
+      crExec (storeI (load x)) $
+      crExec (stackI dup) $
+      crExec (stackI (const 1.0)) $
+      crExec (stackI (arith (minus double))) $
+      crExec (storeI (store x)) $
+      k
 
     -- Compiling expression list.
     -- First value ends up first on the stack.
@@ -278,117 +297,9 @@ module _ (Σ : Sig) (rt : Type) where
       (es : Exps Σ Γ Δ)          {Λ Φ}
       (k : CompRes (Γ , Δ ++ʳ Φ) Λ)
       → CompRes (Γ , Φ) Λ
-    compileExps [] k = k
+    compileExps []       k = k
     compileExps (e ∷ es) k = compileExp e $ compileExps es $ k
 
-{-
-
-  -- Compilation of C-- to basic blocks
-
-  BBs : ∀ (Ξ : MT) {Λ Λ'} (ξ : Λ ⊆ Λ') → Set
-  BBs Ξ {Λ} {Λ′} ξ = (□ λ Λ″ → AllExt (BB Λ″) (⊆-skip Ξ ξ)) Λ′
-
-  record CompRes (Ξ : MT) (Λ : Labels) : Set where
-    constructor _,_
-    field
-      {Ext} : Labels
-      ext   : Λ ⊆ Ext
-      bbs   : BBs Ξ ext
-
-  mutual
-
-    compileStm : ∀ {Γ mt}
-        (s : Stm Σ rt Γ mt) {Λ Φ}
-        (lᵏ : (Γ ▷ mt , Φ) ∈ Λ)
-        → CompRes (Γ , Φ) Λ
-        -- → ∃₂ λ Λₜ (ξ : Λ ⊆ Λₜ) → BBs (Γ , Φ) ξ
-    compileStm s lᵏ = {!!}
-
-    compileCond : ∀{Γ}
-      (e : Exp` Σ Γ bool) {Λ Φ}
-      (lᵗ lᶠ : (Γ , Φ) ∈ Λ)
-      → CompRes (Γ , Φ) Λ
-    compileCond (eConst false) lᵗ lᶠ = ⊆-refl , λ ρ → bbGoto (⊆-lookup ρ lᶠ) ∷ AllExt-id
-    compileCond (eConst true) lᵗ lᶠ  = ⊆-refl , λ ρ → bbGoto (⊆-lookup ρ lᵗ) ∷ AllExt-id
-    compileCond (eOp op e e') lᵗ lᶠ = {!!}
-    compileCond e@(eVar _) lᵗ lᶠ = {!!}
-    compileCond e@(eApp _ _) lᵗ lᶠ = {!!}
-    compileCond e@(eAss _ _) lᵗ lᶠ = {!!}
-    compileCond (eIncrDecr p (incr ()) x) lᵗ lᶠ
-    compileCond (eIncrDecr p (decr ()) x) lᵗ lᶠ
-
-
-
-  -- record BBExt (Λ
-
-  record WithBBs (Λ : Labels) (P : ∀ {Λ′} (ξ : Λ ⊆ Λ′) → Set) : Set where
-    constructor _∙_∙_
-    field
-      {Ext} : Labels
-      ext   : Λ ⊆ Ext
-      bbs   : BBs ext
-      res   : P ext
-
-  -- WithBBs Λ
-
-
-  record CompRes (Ξ : MT) (Λ : Labels) : Set where
-    constructor _∙_∙_
-    field
-      {Ext} : Labels
-      ext   : Λ ⊆ Ext
-      bbs   : BBs ext
-      res   : BBOrGoto Ξ Ext
-
-  crBB : ∀{Ξ Λ} → BBOrGoto Ξ Λ → CompRes Ξ Λ
-  crBB res = _ ∙ (λ ρ → AllExt-id) ∙ res
-
-  crToBB : ∀ {Ξ Λ} → CompRes Ξ Λ → WithBBs Λ λ {Λ′} ξ → BB′ Ξ Λ′
-  crToBB (ext ∙ bbs ∙ block bb) = ext ∙ bbs ∙ {!!}
-  crToBB (ext ∙ bbs ∙ goto l) = {!!}
-
-
-  mutual
-
-    compileStm : ∀ {Γ mt}
-        (s : Stm Σ rt Γ mt) {Λ Φ}
-        (k : CompRes (Γ ▷ mt , Φ) Λ)
-        → CompRes (Γ , Φ) Λ
-        -- → ∃₂ λ Λₜ (ξ : Λ ⊆ Λₜ) → BBs (Γ , Φ) ξ
-    compileStm s k = {!!}
-
-    compileCond : ∀{Γ}
-      (e : Exp` Σ Γ bool) {Λ Φ}
-      (kᵗ kᶠ : CompRes (Γ , Φ) Λ)
-      → CompRes (Γ , Φ) Λ
-    compileCond (eConst false) kᵗ kᶠ = kᶠ
-    compileCond (eConst true ) kᵗ kᶠ = kᵗ
-    compileCond (eOp op e e') kᵗ kᶠ = {!!}
-    compileCond e@(eVar _  )  kᵗ kᶠ = compileExp e $ crIfElse (eqBool true) kᵗ kᶠ
-    compileCond e@(eApp _ _)  kᵗ kᶠ = compileExp e (block (λ ρ → bbIfElse (eqBool true) (gotoToBB kᵗ ρ) (gotoToBB kᶠ ρ)))
-    compileCond e@(eAss _ _)  kᵗ kᶠ = compileExp e (block (λ ρ → bbIfElse (eqBool true) (gotoToBB kᵗ ρ) (gotoToBB kᶠ ρ)))
-    compileCond (eIncrDecr p (incr ()) x) kᵗ kᶠ
-    compileCond (eIncrDecr p (decr ()) x) kᵗ kᶠ
-
-    -- Compiling composite conditionals.
-
-    compileCondOp : ∀{Γ t}
-      (op   : Op t bool)
-      (e e' : Exp` Σ Γ t) {Λ Φ}
-      (kt kf : CompRes (Γ , Φ) Λ)  -- kt: true, kf: false
-      → CompRes (Γ , Φ) Λ
-
-    compileCondOp (logic and) e e' kt kf = {!!}
-    compileCondOp (logic or)  e e' kt kf = {!!}
-    compileCondOp (cmp   op)  e e' kt kf =
-      compileExp e  $ λ ρ  →
-      compileExp e' $ λ ρ' →
-      bbIfElse (cmp op) (gotoToBB kt (⊆-trans ρ ρ'))
-                        (gotoToBB kf (⊆-trans ρ ρ'))
-    compileCondOp (arith (plus ()))
-    compileCondOp (arith (minus ()))
-    compileCondOp (arith (times ()))
-    compileCondOp (arith (div ()))
 -- -}
 -- -}
 -- -}
