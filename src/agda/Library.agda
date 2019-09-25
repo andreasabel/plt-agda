@@ -91,6 +91,7 @@ module Integer where
 module List where
   open import Data.List.Base public using ([_]; _++_; concat; map; foldl; foldr; sum; fromMaybe)
   open import Data.List.All public using (All; []; _∷_) hiding (module All)
+  open import Data.List.Categorical public using (module TraversableM)
 
   module Any where
 
@@ -307,12 +308,14 @@ module IOMonad where
   _=<<_  : ∀ {a b} {A : Set a} {B : Set b} → (A → IO B) → IO A → IO B
   k =<< m = m >>= k
 
+{-# FOREIGN GHC import qualified Data.List #-}
 {-# FOREIGN GHC import qualified Data.Text #-}
 {-# FOREIGN GHC import qualified Data.Text.IO #-}
 {-# FOREIGN GHC import qualified System.Exit #-}
 {-# FOREIGN GHC import qualified System.Environment #-}
-{-# FOREIGN GHC import qualified System.IO #-}
 {-# FOREIGN GHC import qualified System.FilePath #-}
+{-# FOREIGN GHC import qualified System.IO #-}
+{-# FOREIGN GHC import qualified System.Process #-}
 
 -- Binding more Haskell functions
 
@@ -324,6 +327,9 @@ postulate
   readInt        : IO ℤ
   readDouble     : IO Float
   takeBaseName   : String → String
+  takeDirectory  : String → String
+  writeFile      : String → String → IO ⊤
+  callProcess    : String → List String → IO ⊤
 
 {-# COMPILE GHC exitFailure    = \ _ _ -> System.Exit.exitFailure #-}
 {-# COMPILE GHC getArgs        = map Data.Text.pack <$> System.Environment.getArgs #-}
@@ -332,6 +338,9 @@ postulate
 {-# COMPILE GHC readInt        = (System.IO.readLn :: System.IO.IO Integer) #-}
 {-# COMPILE GHC readDouble     = (System.IO.readLn :: System.IO.IO Double)  #-}
 {-# COMPILE GHC takeBaseName   = Data.Text.pack . System.FilePath.takeBaseName . Data.Text.unpack #-}
+{-# COMPILE GHC takeDirectory  = Data.Text.pack . System.FilePath.takeDirectory . Data.Text.unpack #-}
+{-# COMPILE GHC writeFile      = Data.Text.IO.writeFile . Data.Text.unpack #-}
+{-# COMPILE GHC callProcess    = \ cmd -> System.Process.callProcess (Data.Text.unpack cmd) . Data.List.map Data.Text.unpack #-}
 
 -- Showing builtin types
 

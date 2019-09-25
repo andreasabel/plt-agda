@@ -139,7 +139,7 @@ typesToJVM : Block → String
 typesToJVM = String.concat ∘ List.map tyToJVM
 
 funTypeToJVM : FunType → String
-funTypeToJVM (funType Δ t) = parens (typesToJVM Δ) <+> typeToJVM t
+funTypeToJVM (funType Δ t) = parens (typesToJVM Δ) <> typeToJVM t
 
 builtinToJVM' : ∀{t} → Builtin t → String
 builtinToJVM' bReadInt     = "readInt"
@@ -148,7 +148,7 @@ builtinToJVM' bPrintInt    = "printInt"
 builtinToJVM' bPrintDouble = "printDouble"
 
 builtinToJVM : ∀ t → Builtin t → String
-builtinToJVM ft b = builtinToJVM' b <+> funTypeToJVM ft
+builtinToJVM ft b = builtinToJVM' b <> funTypeToJVM ft
 
 cmpOpToJVM : ∀{t} → CmpOp t → String
 cmpOpToJVM (lt _)   = "lt"
@@ -263,18 +263,18 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
       ∷ []
     epilogue = ".end method" ∷ []
 
-MethodNames : Sig → Set
-MethodNames = AssocList String
+FunNames : Sig → Set
+FunNames = AssocList String
 
-methodsToJVM : ∀ {Σ} → MethodNames Σ → Meths Σ Σ → List String
-methodsToJVM methodNames meths = vsep $ List.All.reduce methodToJVM $ List.All.zip (jvmNames , meths)
+methodsToJVM : ∀ {Σ} → FunNames Σ → Meths Σ Σ → List String
+methodsToJVM funNames meths = vsep $ List.All.reduce methodToJVM $ List.All.zip (methodNames , meths)
   where
-  jvmNames : AssocList String _
-  jvmNames = List.All.map (λ {ft} x → x <> funTypeToJVM ft) methodNames
-  open MethodsToJVM jvmNames
+  methodNames : AssocList String _
+  methodNames = List.All.map (λ {ft} x → x <> funTypeToJVM ft) funNames
+  open MethodsToJVM methodNames
 
-programToJVM : String → ∀ {Σ} → MethodNames Σ → Class Σ → List String
-programToJVM name methodNames (program meths _) = vsep $ header ∷ init ∷ main ∷ methodsToJVM methodNames meths ∷ []
+programToJVM : String → ∀ {Σ} → FunNames Σ → Class Σ → List String
+programToJVM name funNames (program meths _) = vsep $ header ∷ init ∷ main ∷ methodsToJVM funNames meths ∷ []
   where
   header
     = ".class public" <+> name

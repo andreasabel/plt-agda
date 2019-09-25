@@ -116,12 +116,12 @@ module _ (Σ : Sig) (rt : Type) where
     ∙ (λ ρ → p (⊆-trans ξ₁ ρ) , q (⊆-trans ξ₂ ρ))
     where
     rpo   = ⊆-pushoutˡ η₁ η₂
-    Λ₁₂   = RawPushout.upperBound rpo
+    -- Λ₁₂   = RawPushout.upperBound rpo
     ξ₁    = RawPushout.leg₁ rpo
     ξ₂    = RawPushout.leg₂ rpo
     η     = ⊆-trans η₁ ξ₁
-    bbs   : □ (λ Λ′ → AllExt (BB Λ′) η) Λ₁₂
-    bbs   = λ τ → AllExt-join (bbs₁ (⊆-trans ξ₁ τ)) (bbs₂ (⊆-trans ξ₂ τ))
+    -- bbs   : □ (λ Λ′ → AllExt (BB Λ′) η) Λ₁₂
+    -- bbs   = λ τ → AllExt-join (bbs₁ (⊆-trans ξ₁ τ)) (bbs₂ (⊆-trans ξ₂ τ))
 
   crGoto : ∀{Ξ Λ} (l : Ξ ∈ Λ) → CompRes Ξ Λ
   crGoto l = _ ∙ (λ ρ → AllExt-id) ∙ goto λ ρ → ⊆-lookup ρ l
