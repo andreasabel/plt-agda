@@ -32,7 +32,7 @@ open import Data.List.Relation.Binary.Sublist.Propositional.Properties public
   using (⊆-trans-idˡ; ⊆-trans-idʳ; ⊆-trans-assoc)
 
 open import Data.Maybe.Base   public using (Maybe; nothing; just)
-open import Data.Nat          public using (ℕ; zero; suc; _+_; _≤_; s≤s)
+open import Data.Nat.Base     public using (ℕ; zero; suc; _+_; _≤_; s≤s) hiding (module ℕ)
 -- renaming (_≤′_ to _≤_; ≤′-refl to ≤-refl)
 open import Data.Nat.Properties public using (+-identityʳ)
 open import Data.Product      public using (∃; ∃₂; _×_; _,_; proj₁; proj₂; map₂)
@@ -66,6 +66,9 @@ module Bool where
   _==_ : (b b' : Bool) → Bool
   b == b' = ⌊ b ≟ b' ⌋
 
+module ℕ where
+  open import Data.Nat.Base public
+
 module Integer where
   open import Data.Integer public
 
@@ -86,7 +89,7 @@ module Integer where
 -- Lists.
 
 module List where
-  open import Data.List.Base public using (map; foldl)
+  open import Data.List.Base public using ([_]; _++_; map; foldl; sum; fromMaybe)
   open import Data.List.All public using (All; []; _∷_) hiding (module All)
 
   module All where
@@ -322,9 +325,11 @@ postulate
 -- Showing builtin types
 
 postulate
+  printNat : ℕ → String
   printInt : ℤ → String
   printDouble : Float → String
 
+{-# COMPILE GHC printNat    = \ i -> Data.Text.pack (show (i :: Integer)) #-}
 {-# COMPILE GHC printInt    = \ i -> Data.Text.pack (show (i :: Integer)) #-}
 {-# COMPILE GHC printDouble = \ d -> Data.Text.pack (show (d :: Double )) #-}
 
