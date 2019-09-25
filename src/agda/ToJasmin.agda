@@ -1,6 +1,8 @@
 module ToJasmin where
 
-open import Library hiding (_++_); open String using (_++_); open List using ([_])
+open import Library; open String renaming (_++_ to _<>_); open List using ([_])
+open import Library.AllExt
+
 open import Value
 open import WellTypedSyntax
 open import FlowChart
@@ -10,10 +12,10 @@ open import BasicBlocks
 -- cat2 = String._++_
 
 parens : String → String
-parens s = "(" ++ s ++ ")"
+parens s = "(" <> s <> ")"
 
 sep2By : String → String → String → String
-sep2By sep s s' = s ++ sep ++ s'
+sep2By sep s s' = s <> sep <> s'
 
 infixl 6 _<+>_ _<t>_ _<u>_
 
@@ -26,6 +28,9 @@ _<t>_ = sep2By "\t"
 _<u>_ : String → String → String
 _<u>_ = sep2By "_"
 
+vsep : List (List String) → List String
+vsep = List.foldr (λ xs ys → xs ++ "" ∷ ys) []
+
 -- Printing monad
 
 iconstToJVM : ℤ → String
@@ -37,7 +42,7 @@ iconstToJVM (+_ 4) = "iconst_4"
 iconstToJVM (+_ 5) = "iconst_5"
 iconstToJVM (-[1+ 0 ]) = "iconst_m1"
 iconstToJVM i = "ldc" <t> printInt i
-  -- TODO: isByte i -> "bipush " ++ show i
+  -- TODO: isByte i -> "bipush " <> show i
 
 constToJVM : ∀ t → Val` t → String
 constToJVM int        = iconstToJVM
@@ -62,7 +67,7 @@ tyPrefix int    = "i"
 tyPrefix bool   = "i"
 
 typePrefix : Type → String → String
-typePrefix (` t) = tyPrefix t ++_
+typePrefix (` t) = tyPrefix t <>_
 typePrefix void  = id
 
 arithToJVM : ∀ t → ArithOp t → String
@@ -117,8 +122,8 @@ incDecToJVM inc = "1"
 incDecToJVM dec = "-1"
 
 storeIToJVM : ∀{Γ Φ Φ'} → StoreI Γ Φ Φ' → String
-storeIToJVM (store {t = t} x) = tyPrefix t ++ accessToJVM "store" (varToAddr x)
-storeIToJVM (load {t = t}  x) = tyPrefix t ++ accessToJVM "load" (varToAddr x)
+storeIToJVM (store {t = t} x) = tyPrefix t <> accessToJVM "store" (varToAddr x)
+storeIToJVM (load {t = t}  x) = tyPrefix t <> accessToJVM "load" (varToAddr x)
 storeIToJVM (incDec b x) = "iinc" <t> printNat (varToAddr x) <+> incDecToJVM b
 
 tyToJVM : Ty → String
@@ -145,77 +150,152 @@ builtinToJVM' bPrintDouble = "printDouble"
 builtinToJVM : ∀ t → Builtin t → String
 builtinToJVM ft b = builtinToJVM' b <+> funTypeToJVM ft
 
-module PrintMethod
-  (rt : Type)
-  {Σ : Sig}    (funNames   : AssocList String Σ)
-  {Λ : Labels} (labelNames : AssocList String Λ)
-  where
+cmpOpToJVM : ∀{t} → CmpOp t → String
+cmpOpToJVM (lt _)   = "lt"
+cmpOpToJVM (gt -)   = "gt"
+cmpOpToJVM (ltEq _) = "le"
+cmpOpToJVM (gtEq _) = "ge"
+cmpOpToJVM eq       = "eq"
+cmpOpToJVM nEq      = "ne"
+
+icmpToJVM : String → CmpOp int → String
+icmpToJVM l op = "if_icmp" <> cmpOpToJVM op <t> l
+
+dcmpToJVM : String → ∀{t} → CmpOp t → List String
+dcmpToJVM l (lt   a) = "iconst_m1" ∷ icmpToJVM l eq  ∷ []  -- check for -1
+dcmpToJVM l (gtEq a) = "iconst_m1" ∷ icmpToJVM l nEq ∷ []  -- check not -1
+dcmpToJVM l (gt   a) = "iconst_1"  ∷ icmpToJVM l eq  ∷ []  -- check for 1
+dcmpToJVM l (ltEq a) = "iconst_1"  ∷ icmpToJVM l nEq ∷ []  -- check not 1
+dcmpToJVM l eq       = [ "ifeq" <t> l ]                    -- check for 0
+dcmpToJVM l nEq      = [ "ifne" <t> l ]                    -- check not 0
+
+cmpToJVM : String → ∀ t → CmpOp t → List String
+cmpToJVM l int   op  = [ icmpToJVM l op  ]
+cmpToJVM l bool  eq  = [ icmpToJVM l eq  ]
+cmpToJVM l bool  nEq = [ icmpToJVM l nEq ]
+cmpToJVM l double op = "dcmpg" ∷ dcmpToJVM l op  -- dcmpg returns sign of subtraction (one of -1,0,1)
+
+condToJVM : String → ∀ {Φ Φ'} → Cond Φ Φ' → List String
+condToJVM l (eqBool false) = [ "ifeq" <t> l ]
+condToJVM l (eqBool true ) = [ "ifne" <t> l ]
+condToJVM l (eqZero true ) = [ "ifeq" <t> l ]
+condToJVM l (eqZero false) = [ "ifne" <t> l ]
+condToJVM l (cmp op) = cmpToJVM l _ op
+
+record BBToJVM : Set where
+  constructor _∙_∙_
+  field
+    maxStore : ℕ
+    maxStack : ℕ
+    code     : List String
+
+emit : (Ξ : MT) → List String → BBToJVM
+emit (Γ , Φ) ss = cxtMemSize (List⁺.toList Γ) ∙ blockMemSize Φ ∙ List.map ("\t" <>_) ss
+
+_◇_ : (c c' : BBToJVM) → BBToJVM
+(maxStore₁ ∙ maxStack₁ ∙ code₁) ◇ (maxStore₂ ∙ maxStack₂ ∙ code₂)
+  = (maxStore₁ ℕ.⊔ maxStore₂)
+  ∙ (maxStack₁ ℕ.⊔ maxStack₂)
+  ∙ (code₁ ++ code₂)
+
+
+module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
 
   funToJVM : ∀ {ft : FunType} → ft ∈ Σ → String
   funToJVM = List.All.lookup funNames
-
-  labelToJVM : ∀{Ξ} (l : Ξ ∈ Λ) → String
-  labelToJVM = List.All.lookup labelNames
 
   jfToJVM : ∀ {Ξ Ξ'} → JF Σ Ξ Ξ' → List String
   jfToJVM (stackI j)   = List.fromMaybe $ stackIToJVM j
   jfToJVM (storeI j)   = [ storeIToJVM j ]
   jfToJVM (scopeI adm) = []
   jfToJVM (call f)     = [ "invokestatic" <t> funToJVM f ]
-  jfToJVM (builtin b)  = [ "invokestatic" <t> "Runtime/" ++ builtinToJVM _ b ]
+  jfToJVM (builtin b)  = [ "invokestatic" <t> "Runtime/" <> builtinToJVM _ b ]
 
-  record BBToJVM : Set where
-    constructor _∙_∙_
-    field
-      maxStore : ℕ
-      maxStack : ℕ
-      code     : List String
+  module MethodToJVM (rt : Type) {Λ : Labels} (labelNames : AssocList String Λ) where
 
-  emit : (Ξ : MT) → List String → BBToJVM
-  emit (Γ , Φ) ss = cxtMemSize (List⁺.toList Γ) ∙ blockMemSize Φ ∙ ss
+    labelToJVM : ∀{Ξ} (l : Ξ ∈ Λ) → String
+    labelToJVM = List.All.lookup labelNames
 
-  _◇_ : (c c' : BBToJVM) → BBToJVM
-  (maxStore₁ ∙ maxStack₁ ∙ code₁) ◇ (maxStore₂ ∙ maxStack₂ ∙ code₂)
-    = (maxStore₁ ℕ.⊔ maxStore₂)
-    ∙ (maxStack₁ ℕ.⊔ maxStack₂)
-    ∙ (code₁ List.++ code₂)
+    bbToJVM : ∀ Ξ (bb : BB Σ rt Λ Ξ) → BBToJVM
+    bbToJVM Ξ (bbExec j bb) = emit Ξ (jfToJVM j) ◇ bbToJVM _ bb
+    bbToJVM Ξ (bbGoto l)    = emit Ξ [ "goto" <t> labelToJVM l ]
+    bbToJVM Ξ bbReturn      = emit Ξ [ typePrefix rt "return" ]
+    bbToJVM Ξ (bbIf c l bb) = emit Ξ (condToJVM (labelToJVM l) c) ◇ bbToJVM _ bb
+    bbToJVM Ξ (bbIfElse c bb bb₁) = impossible where postulate impossible : _
 
 
-  cmpOpToJVM : ∀{t} → CmpOp t → String
-  cmpOpToJVM (lt _)   = "lt"
-  cmpOpToJVM (gt -)   = "gt"
-  cmpOpToJVM (ltEq _) = "le"
-  cmpOpToJVM (gtEq _) = "ge"
-  cmpOpToJVM eq       = "eq"
-  cmpOpToJVM nEq      = "ne"
+    -- -- bbsToJVM : ∀{Λ′} → List.All (BB Σ rt Λ) Λ′ → BBToJVM
+    -- bbsToJVM : ∀{Λ′} {τ : [] ⊆ Λ′} → AllExt (BB Σ rt Λ) τ → BBToJVM
+    -- bbsToJVM [] = 0 ∙ 0 ∙ []
+    -- bbsToJVM (bb ∷ bbs) = bbToJVM _ bb ◇ bbsToJVM bbs
 
-  icmpToJVM : String → CmpOp int → String
-  icmpToJVM l op = "if_icmp" ++ cmpOpToJVM op <t> l
+  -- crToJVM : ∀ rt {Ξ} → CompRes Σ rt Ξ [] → BBToJVM
+  -- crToJVM rt (_ ∙ bbs ∙ bb) = bbToJVM _ (gotoToBB Σ rt bb ⊆-refl) ◇ bbsToJVM (bbs ⊆-refl)
+  --   where
+  --   labelNames : AssocList String _
+  --   labelNames = List.All.tabulate {!!}
+  --   open MethodToJVM rt labelNames
 
-  dcmpToJVM : String → ∀{t} → CmpOp t → List String
-  dcmpToJVM l (lt   a) = "iconst_m1" ∷ icmpToJVM l eq  ∷ []  -- check for -1
-  dcmpToJVM l (gtEq a) = "iconst_m1" ∷ icmpToJVM l nEq ∷ []  -- check not -1
-  dcmpToJVM l (gt   a) = "iconst_1"  ∷ icmpToJVM l eq  ∷ []  -- check for 1
-  dcmpToJVM l (ltEq a) = "iconst_1"  ∷ icmpToJVM l nEq ∷ []  -- check not 1
-  dcmpToJVM l eq       = [ "ifeq" <t> l ]                    -- check for 0
-  dcmpToJVM l nEq      = [ "ifne" <t> l ]                    -- check not 0
+  methToJVM : ∀ rt {Δ} → Meth Σ (funType Δ rt) → BBToJVM
+  methToJVM rt (bbMethod Λ entry blocks) = bbToJVM _ entry ◇ blocksToJVM
+    where
 
-  cmpToJVM : String → ∀ t → CmpOp t → List String
-  cmpToJVM l int   op  = [ icmpToJVM l op  ]
-  cmpToJVM l bool  eq  = [ icmpToJVM l eq  ]
-  cmpToJVM l bool  nEq = [ icmpToJVM l nEq ]
-  cmpToJVM l double op = "dcmpg" ∷ dcmpToJVM l op  -- dcmpg returns sign of subtraction (one of -1,0,1)
+    labelNames : AssocList String Λ
+    labelNames = List.All.tabulate (("L" <>_) ∘ printNat ∘ List.Any.toℕ)
 
-  condToJVM : String → ∀ {Φ Φ'} → Cond Φ Φ' → List String
-  condToJVM l (eqBool false) = [ "ifeq" <t> l ]
-  condToJVM l (eqBool true ) = [ "ifne" <t> l ]
-  condToJVM l (eqZero true ) = [ "ifeq" <t> l ]
-  condToJVM l (eqZero false) = [ "ifne" <t> l ]
-  condToJVM l (cmp op) = cmpToJVM l _ op
+    open MethodToJVM rt labelNames
 
-  bbToJVM : ∀ Ξ (bb : BB Σ rt Λ Ξ) → BBToJVM
-  bbToJVM Ξ (bbExec j bb) = emit Ξ (jfToJVM j) ◇ bbToJVM _ bb
-  bbToJVM Ξ (bbGoto l)    = emit Ξ [ "goto" <t> labelToJVM l ]
-  bbToJVM Ξ bbReturn      = emit Ξ [ typePrefix rt "return" ]
-  bbToJVM Ξ (bbIf c l bb) = emit Ξ (condToJVM (labelToJVM l) c) ◇ bbToJVM _ bb
-  bbToJVM Ξ (bbIfElse c bb bb₁) = {!!}
+    blockToJVM : ∀{Ξ} → String × BB Σ rt Λ Ξ → BBToJVM
+    blockToJVM (l , bb) = record out { code = (l <> ":") ∷ BBToJVM.code out }
+      where out = bbToJVM _ bb
+
+    blocksToJVM : BBToJVM
+    blocksToJVM = List.foldr _◇_ (0 ∙ 0 ∙ []) $ List.All.reduce blockToJVM $ List.All.zip (labelNames , blocks)
+
+  methodToJVM : ∀{ft} → String × Meth Σ ft → List String
+  methodToJVM (name , meth) with methToJVM _ meth
+  ... | storeLimit ∙ stackLimit ∙ code = vsep $ prologue ∷ code ∷ epilogue ∷ []
+    where
+    prologue
+      = ".method public static" <+> name
+      ∷ ".limit locals" <+> printNat storeLimit
+      ∷ ".limit stack"  <+> printNat stackLimit
+      ∷ []
+    epilogue = ".end method" ∷ []
+
+MethodNames : Sig → Set
+MethodNames = AssocList String
+
+methodsToJVM : ∀ {Σ} → MethodNames Σ → Meths Σ Σ → List String
+methodsToJVM methodNames meths = vsep $ List.All.reduce methodToJVM $ List.All.zip (jvmNames , meths)
+  where
+  jvmNames : AssocList String _
+  jvmNames = List.All.map (λ {ft} x → x <> funTypeToJVM ft) methodNames
+  open MethodsToJVM jvmNames
+
+programToJVM : String → ∀ {Σ} → MethodNames Σ → Class Σ → List String
+programToJVM name methodNames (program meths _) = vsep $ header ∷ init ∷ main ∷ methodsToJVM methodNames meths ∷ []
+  where
+  header
+    = ".class public" <+> name
+    ∷ ".super java/lang/Object"
+    ∷ []
+  init
+    = ".method public <init>()V"
+    ∷ ""
+    ∷ "  aload_0"
+    ∷ "  invokespecial java/lang/Object/<init>()V"
+    ∷ "  return"
+    ∷ ""
+    ∷ ".end method"
+    ∷ []
+  main
+    = ".method public static main([Ljava/lang/String;)V"
+    ∷ ".limit locals 1"
+    ∷ ""
+    ∷ ("  invokestatic" <+> name <> "/main()I")
+    ∷ "  pop"
+    ∷ "  return"
+    ∷ ""
+    ∷ ".end method"
+    ∷ []
