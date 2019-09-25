@@ -195,9 +195,13 @@ Meth Σ (funType Δ rt) = FC Σ rt [] (Δ ∷ [] , [])
 -- If the statements do not end in returns,
 -- a default value will be returned.
 
+fcDefaultReturn : ∀ {Σ Λ Ξ} rt → FC Σ rt Λ Ξ
+fcDefaultReturn (` t) = fcConst (defaultVal` t) fcReturn
+fcDefaultReturn void  = fcReturn
+
 compileDef : ∀{Σ ft} → Def Σ ft → Meth Σ ft
-compileDef {Σ} {funType Δ rt} (_ , ss) =
-  compileStms Σ rt ss λ ρ → fcConst (defaultVal rt) fcReturn
+compileDef {Σ} {funType Δ rt} (Γ , ss) =
+  compileStms Σ rt ss λ ρ → fcDefaultReturn rt
 
 -- Methods
 

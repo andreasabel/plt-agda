@@ -27,12 +27,38 @@ ReturnVal void _ _ = ⊤
 --   Σ : Sig
 --   rt : Type
 
-module _ (Σ : Sig) (rt : Type) where
+module _ {Σ : Sig} {rt : Type} where
+
+  data StackIEval : ∀ {Φ Φ'} (φ : Frame Φ) (φ' : Frame Φ') (j : StackI Φ Φ') → Set where
+
+    evConst : ∀{Φ t} {φ : Frame Φ} {v : Val` t}
+      → StackIEval φ (just v ∷ φ) (const v)
+
+    evDup : ∀{Φ t} {φ : Frame Φ} {v : Entry` t}
+      → StackIEval (v ∷ φ) (v ∷ v ∷ φ) dup
+
+    evPopVoid : ∀ {Φ} {φ : Frame Φ}
+      → StackIEval φ φ (pop {t = void})
+
+    evPop : ∀ {Φ t} {φ : Frame Φ} {v : Entry` t}
+      → StackIEval (v ∷ φ) φ (pop {t = ` t})
+
+    evArith : ∀{Φ t} {φ : Frame Φ} {v₁ v₂ v : Entry` t} {op : ArithOp t}
+      -- → v₁ ⟨ op ⟩ v₂ ⇓ᵃ v -- TODO: what about undefined stack entries?
+      → StackIEval (v₂ ∷ v₁ ∷ φ) (v ∷ φ) (arith op)
+
+    -- TODO
 
   -- Small step operational semantics of jump-free instructions.
   -- A jf instruction relates two machine states (before and after the instruction).
 
   data JFEval : ∀ {Ξ Ξ'} (ξ : MS Ξ) (ξ' : MS Ξ') → JF Σ Ξ Ξ' → Set where
+
+    evStackI : ∀{Γ Φ Φ'} (j : StackI Φ Φ') {γ : Env Γ} {φ : Frame Φ} {φ' : Frame Φ'}
+      → StackIEval φ φ' j
+      → JFEval (γ , φ) (γ , φ') (stackI j)
+
+
 
     -- TODO
 
@@ -42,6 +68,10 @@ module _ (Σ : Sig) (rt : Type) where
   data LS : Labels → Set where
     [] : LS []
     _∷_ : ∀{Λ Ξ} (fc : FC Σ rt Λ Ξ) (ƛ : LS Λ) → LS (Ξ ∷ Λ)
+
+  -- -- Not the same:
+  -- LS : Labels → Set
+  -- LS Λ = List.All (FC Σ rt Λ) Λ
 
   -- Looking up a label in the label semantics gives us a flowchart.
   -- (Need weakening of flow-charts here because of de Bruijn indices.

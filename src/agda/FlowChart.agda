@@ -58,7 +58,7 @@ k ∙ ρ = λ ρ' → k (⊆-trans ρ ρ')
 -- Stack-only instructions
 
 data StackI : (Φ Φ' : ST) → Set where
-  const : ∀{Φ t} (c : Val t) → StackI Φ (Φ ▷ᵇ t)
+  const : ∀{Φ t} (v : Val` t) → StackI Φ (t ∷ Φ)
   dup   : ∀{Φ t} → StackI (t ∷ Φ) (t ∷ t ∷ Φ)
   pop   : ∀{Φ t} → StackI (Φ ▷ᵇ t) Φ
   dcmp  : ∀{Φ} → StackI (double ∷ double ∷ Φ) (int ∷ Φ)

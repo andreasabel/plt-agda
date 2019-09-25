@@ -64,6 +64,7 @@ data _≡_±1_ : ∀{t} (v v' : Val` t) (k : IncrDecr t) → Set where
 -- Operators
 
 postulate
+  _⟨_⟩_⇓ᵃ_ : ∀{t} (v : Val` t) (op : ArithOp t) (v' : Val` t) (w : Val` t) → Set
   _⟨_⟩_⇓ᵒ_ : ∀{t t'} (v : Val` t) (op : Op t t') (v' : Val` t) (w : Val` t') → Set
 
 -- Evaluation of expressions (non-deterministic partial big-step semantics).
