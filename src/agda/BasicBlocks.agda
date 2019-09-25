@@ -17,6 +17,7 @@ module _ (Σ : Sig) (rt : Type) where
     bbReturn : ∀{Γ Φ}           → BB Λ (Γ , Φ ▷ᵇ rt) -- return from function (stack is destroyed)
     -- Branching:
     bbIfElse : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (bb bb' : BB Λ (Γ , Φ')) → BB Λ (Γ , Φ)
+    bbIf     : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (l : (Γ , Φ') ∈ Λ) (bb : BB Λ (Γ , Φ')) → BB Λ (Γ , Φ)
     -- Cons-like: Instruction
     bbExec     : ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') (bb : BB Λ Ξ') → BB Λ Ξ
 
@@ -102,6 +103,9 @@ module _ (Σ : Sig) (rt : Type) where
       bbs   : BBs ext
       res   : P Ext
 
+  CompRes :  (Ξ : MT) (Λ : Labels) → Set
+  CompRes Ξ Λ = WithBBs (BBOrGoto Ξ) Λ
+
   mapBBs :  ∀ {P Q} (f : P ⇒ Q) → WithBBs P ⇒ WithBBs Q
   mapBBs f (ext ∙ bbs ∙ p) = ext ∙ bbs ∙ f p
 
@@ -118,9 +122,6 @@ module _ (Σ : Sig) (rt : Type) where
     η     = ⊆-trans η₁ ξ₁
     bbs   : □ (λ Λ′ → AllExt (BB Λ′) η) Λ₁₂
     bbs   = λ τ → AllExt-join (bbs₁ (⊆-trans ξ₁ τ)) (bbs₂ (⊆-trans ξ₂ τ))
-
-  CompRes :  (Ξ : MT) (Λ : Labels) → Set
-  CompRes Ξ Λ = WithBBs (BBOrGoto Ξ) Λ
 
   crGoto : ∀{Ξ Λ} (l : Ξ ∈ Λ) → CompRes Ξ Λ
   crGoto l = _ ∙ (λ ρ → AllExt-id) ∙ goto λ ρ → ⊆-lookup ρ l
@@ -155,10 +156,29 @@ module _ (Σ : Sig) (rt : Type) where
     ∙ (λ ρ → AllExt-comp (gotoToBB bb ρ ∷ AllExt-id) (bbs ρ))
     ∙ goto (λ ρ → ⊆-lookup (⊆-trans η ρ) here!)
 
-  crIfElse : ∀{Γ Φ Φ' Λ} (c : Cond Φ Φ') (cr₁ cr₂ : CompRes (Γ , Φ') Λ) → CompRes (Γ , Φ) Λ
-  crIfElse c cr₁ cr₂ =
+  -- Compiling to binary if.
+
+  crIfElse' : ∀{Γ Φ Φ' Λ} (c : Cond Φ Φ') (cr₁ cr₂ : CompRes (Γ , Φ') Λ) → CompRes (Γ , Φ) Λ
+  crIfElse' c cr₁ cr₂ =
     mapBBs (λ te → block (λ ρ → bbIfElse c (proj₁ (te ρ)) (proj₂ (te ρ)))) $
     joinBBs (crToBB cr₁) (crToBB cr₂)
+
+  -- Compiling to unary if.
+
+  crIf     : ∀{Γ Φ Φ' Λ}
+    (c   : Cond Φ Φ')
+    (lw  : WithBBs (□ ((Γ , Φ') ∈_)) Λ)
+    (bbw : WithBBs (□ (BB′ (Γ , Φ'))) Λ)
+    → CompRes (Γ , Φ) Λ
+  crIf c lw bbw =
+    mapBBs (λ te → block (λ ρ → bbIf c (proj₁ (te ρ)) (proj₂ (te ρ)))) $
+    joinBBs lw bbw
+
+  crIfElse : ∀{Γ Φ Φ' Λ} (c : Cond Φ Φ') (cr₁ cr₂ : CompRes (Γ , Φ') Λ) → CompRes (Γ , Φ) Λ
+  crIfElse c (ext₁ ∙ bbs₁ ∙ goto l₁  ) (ext₂ ∙ bbs₂ ∙ block bb₂) = crIf c           (ext₁ ∙ bbs₁ ∙ l₁) (ext₂ ∙ bbs₂ ∙ bb₂)
+  crIfElse c (ext₁ ∙ bbs₁ ∙ goto l₁  ) (ext₂ ∙ bbs₂ ∙ goto l₂  ) = crIf c           (ext₁ ∙ bbs₁ ∙ l₁) (ext₂ ∙ bbs₂ ∙ (bbGoto ∘ l₂))
+  crIfElse c (ext₁ ∙ bbs₁ ∙ block bb₁) (ext₂ ∙ bbs₂ ∙ goto l₂  ) = crIf (negCond c) (ext₂ ∙ bbs₂ ∙ l₂) (ext₁ ∙ bbs₁ ∙ bb₁)
+  crIfElse c cr₁@(_ ∙ _ ∙ block _)     (ext₂ ∙ bbs₂ ∙ block bb₂) = crIf c           (crToGoto' cr₁)    (ext₂ ∙ bbs₂ ∙ bb₂)
 
   crExec : ∀{Ξ Ξ' Λ} (j : JF Σ Ξ Ξ') (bb : CompRes Ξ' Λ) → CompRes Ξ Λ
   crExec j = mapBBs λ k → block $ bbExec j ∘ gotoToBB k

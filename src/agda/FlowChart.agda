@@ -61,8 +61,8 @@ data StackI : (Φ Φ' : ST) → Set where
   const : ∀{Φ t} (v : Val` t) → StackI Φ (t ∷ Φ)
   dup   : ∀{Φ t} → StackI (t ∷ Φ) (t ∷ t ∷ Φ)
   pop   : ∀{Φ t} → StackI (Φ ▷ᵇ t) Φ
-  dcmp  : ∀{Φ} → StackI (double ∷ double ∷ Φ) (int ∷ Φ)
   arith : ∀{Φ t} (op : ArithOp t) → StackI (t ∷ t ∷ Φ) (t ∷ Φ)
+  -- dcmp  : ∀{Φ} → StackI (double ∷ double ∷ Φ) (int ∷ Φ)
 
 -- Store-manipulating instructions
 
@@ -152,6 +152,14 @@ module _ (Σ : Sig) where
 
     pattern fcCall    f fc = fcExec (call    f) fc
     pattern fcBuiltin f fc = fcExec (builtin f) fc
+
+-- Negating conditions
+
+negCond : ∀{Φ Φ'} → Cond Φ Φ' → Cond Φ Φ'
+negCond (cmp op)   = cmp (negCmpOp op)
+negCond (eqBool b) = eqBool (not b)
+negCond (eqZero b) = eqZero (not b)
+
 -- -}
 -- -}
 -- -}

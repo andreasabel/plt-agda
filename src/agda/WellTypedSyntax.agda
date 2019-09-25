@@ -239,3 +239,13 @@ builtins =
   (_ , bPrintInt   ) ∷
   (_ , bPrintDouble) ∷
   []
+
+-- Negating comparison
+
+negCmpOp : ∀{t} → CmpOp t → CmpOp t
+negCmpOp (lt a)   = gtEq a
+negCmpOp (gt a)   = ltEq a
+negCmpOp (ltEq a) = gt a
+negCmpOp (gtEq a) = lt a
+negCmpOp eq       = nEq
+negCmpOp nEq      = eq
