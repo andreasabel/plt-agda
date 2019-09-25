@@ -89,7 +89,7 @@ module Integer where
 -- Lists.
 
 module List where
-  open import Data.List.Base public using ([_]; _++_; concat; map; foldl; foldr; sum; fromMaybe)
+  open import Data.List.Base public using ([_]; _++_; concat; map; foldl; foldr; reverse; sum; fromMaybe)
   open import Data.List.All public using (All; []; _∷_) hiding (module All)
   open import Data.List.Categorical public using (module TraversableM)
 

@@ -232,13 +232,13 @@ module Interpret {Σ : Sig} (prg : Program Σ) where
         return v
 
       -- Evaluate a list of expressions (function arguments).
-      -- This could be implemented with a mapM function for List.All.
+      -- NO LONGER: This could be implemented with a mapM function for List.All.
 
       evalExps : ∀{i ts} (es : Exps Σ Γ ts) → Eval i (Vals ts)
       evalExps []       = return []
       evalExps (e ∷ es) = do
-        v  ← evalExp e
         vs ← evalExps es
+        v  ← evalExp e
         return (v ∷ vs)
 
   -- During evaluation of statements the program is fixed.

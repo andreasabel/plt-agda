@@ -327,10 +327,10 @@ module _ (Σ : Sig) (rt : Type) where
 
     compileExps : ∀{Γ Δ}
       (es : Exps Σ Γ Δ) {Λ Φ}
-      → CompRes (Γ , Δ ++ʳ Φ) Λ
+      → CompRes (Γ , Δ ++ Φ) Λ
       → CompRes (Γ , Φ)       Λ
     compileExps []       = id
-    compileExps (e ∷ es) = compileExp e ∘ compileExps es
+    compileExps (e ∷ es) = compileExps es ∘ compileExp e
 
 -- Method
 

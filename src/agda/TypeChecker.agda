@@ -240,6 +240,7 @@ module CheckExpressions {Σ : Sig} {Γ : Cxt} (ξ : TCEnv Σ Γ) where
   Infer` = M (∃ λ (t : Ty)  → Exp` t)
 
   mutual
+    {-# TERMINATING #-}
 
     -- Type inference.
 
@@ -256,7 +257,7 @@ module CheckExpressions {Σ : Sig} {Γ : Cxt} (ξ : TCEnv Σ Γ) where
 
     inferExp (A.eApp x es) = do
       (funType Δ t , k) ← lookupFun (idToName x)
-      es' ← checkExps es Δ
+      es' ← checkExps (List.reverse es) Δ
       case k of λ where
         (inj₁ b) → return (t , eBuiltin b es')
         (inj₂ f) → return (t , eApp f es')
@@ -315,9 +316,10 @@ module CheckExpressions {Σ : Sig} {Γ : Cxt} (ξ : TCEnv Σ Γ) where
     checkExps []       (t ∷ Δ) = throwError tooFewArguments
     checkExps (e ∷ es) []      = throwError tooManyArguments
     checkExps (e ∷ es) (t ∷ Δ) = do
-      e'  ← checkExp` e t
+      -- e should be checked after es as we have reversed the argument list
       es' ← checkExps es Δ
-      return (e' ∷ es')
+      e'  ← checkExp` e t
+      return (e' ∷ es')  -- Last argument is first in list
 
     -- Operators.
 
@@ -605,17 +607,36 @@ module CheckProgram where
   -- Thus, the first argument needs to remain first in the list
   -- (de Bruijn index 0).  We proceed in foldr manner.
 
-  checkArgs : (args : List A.Arg) → Error (∃ λ Δ → TCBlock Δ)
-  checkArgs [] = return ([] , []ⁿ)
-  checkArgs (A.aDecl t x ∷ args) = do
+  checkArgsʳ : (args : List A.Arg) → Error (∃ λ Δ → TCBlock Δ)
+  checkArgsʳ [] = return ([] , []ⁿ)
+  checkArgsʳ (A.aDecl t x ∷ args) = do
     case type t of λ where
       void   → throwError voidDeclaration
       (` t') → do
         -- Handle the args in right-to-left manner
-        (Δ , δ) ← checkArgs args
+        (Δ , δ) ← checkArgsʳ args
         case t' ↦ idToName x ∷ᵘ? uniq δ of λ where
           (no  _) → throwError duplicateParameter
           (yes u) → return (_ , record { uniq = u })
+
+  -- Update: for the sake of the compiler, we actually need to reverse the order.
+  -- Otherwise the de Bruijn-indices are inconsistent between function parameters
+  -- and block-declared variables.  Reversing the order of the call arguments
+  -- on the stack would be in clash with Java's calling convention.
+
+  checkArgsˡ : ∀{Δ} (δ : TCBlock Δ) (args : List A.Arg) → Error (∃ λ Δ′ → TCBlock Δ′)
+  checkArgsˡ δ [] = return (_ , δ)
+  checkArgsˡ δ (A.aDecl t x ∷ args) = do
+    case type t of λ where
+      void   → throwError voidDeclaration
+      (` t') → do
+        -- Handle the args in left-to-right manner
+        case t' ↦ idToName x ∷ᵘ? uniq δ of λ where
+          (no  _) → throwError duplicateParameter
+          (yes u) → checkArgsˡ record{ uniq = u } args
+
+  checkArgs : (args : List A.Arg) → Error (∃ λ Δ → TCBlock Δ)
+  checkArgs = checkArgsˡ []ⁿ
 
   addFun : ∀ (x : Name) (ft : FunType) {Σ} (σ : TCSig Σ) → Error (TCSig (ft ∷ Σ))
   addFun x ft σ = do

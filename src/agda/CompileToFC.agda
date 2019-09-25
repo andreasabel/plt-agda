@@ -72,11 +72,11 @@ module _ (Σ : Sig) (rt : Type) where
 
     compileExps : ∀{Γ Δ}
       (es : Exps Σ Γ Δ)          {Λ Φ}
-      (k : □ (FC' (Γ , Δ ++ʳ Φ)) Λ)
+      (k : □ (FC' (Γ , Δ ++ Φ)) Λ)
       → FC' (Γ , Φ) Λ
 
     compileExps []       k = k !
-    compileExps (e ∷ es) k = compileExp e λ ρ → compileExps es λ ρ' → k (⊆-trans ρ ρ')
+    compileExps (e ∷ es) k = compileExps es λ ρ → compileExp e λ ρ' → k (⊆-trans ρ ρ')
 
     -- Compiling conditionals.
 
