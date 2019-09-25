@@ -8,12 +8,18 @@ ghcflags=--ghc-flag=-i../haskell --ghc-flag=-Wwarn
 
 # Must be first goal...
 
+lab3 : lab3.agda $(agdafiles)
+	$(agda) --compile $(ghcflags) $<
+
 lab2 : lab2.agda $(agdafiles)
 	$(agda) --compile $(ghcflags) $<
 
 # Otherwise infinite loop here...
 
-test : lab2
+test : lab3
+	./run-testsuite3.sh
+
+test2 : lab2
 	./run-testsuite.sh
 
 

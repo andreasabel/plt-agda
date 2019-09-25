@@ -1,19 +1,15 @@
 
-module lab2 where
+module lab3 where
 
 open import Library
 open import CPP.AST     using (Program; printProgram)
 open import CPP.Parser  using (Err; ok; bad; parseProgram)
 open import TypeChecker using (printError; module CheckProgram)
-open import Interpreter using (runProgram)
+open import BasicBlocks using (compileProgram)
+open import ToJasmin    using (programToJVM)
 
--- Other modules, not used here.
-import Value
-import Evaluation
-import FlowChart
-
-check : String → IO ⊤
-check contents = do
+check : String → String → IO ⊤
+check name contents = do
   case parseProgram contents of λ where
     (bad cs) → do
       putStrLn "SYNTAX ERROR"
@@ -27,8 +23,9 @@ check contents = do
           putStrLn "The type error is:"
           putStrLn (printError err)
           exitFailure
-        (ErrorMonad.ok (Σ , _ , prg')) → do
-          runProgram prg'
+        (ErrorMonad.ok (Σ , funNames , prg')) → do
+          let class = programToJVM name funNames $ compileProgram prg'
+          putStrLn $ String.concat class
 
   where
   open IOMonad
@@ -39,16 +36,16 @@ check contents = do
 
 usage : IO ⊤
 usage = do
-  putStrLn "Usage: lab2 <SourceFile>"
+  putStrLn "Usage: lab3 <SourceFile>"
   exitFailure
   where open IOMonad
 
 -- Parse command line argument and pass file contents to check.
 
-lab2 : IO ⊤
-lab2 = do
+lab3 : IO ⊤
+lab3 = do
   file ∷ [] ← getArgs where _ → usage
-  check =<< readFiniteFile file
+  check (takeBaseName file) =<< readFiniteFile file
   where open IOMonad
 
-main = lab2
+main = lab3

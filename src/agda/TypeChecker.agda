@@ -667,12 +667,12 @@ module CheckProgram where
 
   -- Entry point.  Performs the 3 steps.
 
-  checkProgram : (prg : A.Program) → Error (∃ λ Σ → Program Σ)
+  checkProgram : (prg : A.Program) → Error (∃ λ Σ → AssocList Name Σ × Program Σ)
   checkProgram (A.pDefs ds) = do
     worklist {Σ} σ ds' ← checkSignature ds initWorklist
     prg  ← checkDefs {Σ} σ {Σ} ds'
     main ← checkMain σ
-    return (Σ , program prg main)
+    return (Σ , σ .theSig .scope , program prg main)
 
 -- -}
 -- -}
