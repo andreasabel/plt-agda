@@ -147,8 +147,13 @@ module _ (Σ : Sig) (rt : Type) where
     ∙ goto (λ ρ → ⊆-lookup ρ here!)
 
   -- NB: CPS form of joinPoint forces sharing of computation (crToGoto cr)
-  joinPoint : ∀ {Ξ Λ} {A : Set} → {-@01-} CompRes Ξ Λ → (@ω CompRes Ξ Λ → A) → A
-  joinPoint cr k = k (crToGoto cr)
+  joinPoint : ∀ {Ξ Λ} → {-@01-} CompRes Ξ Λ → ∀{P} → (∀{Λ′} (ρ : Λ ⊆ Λ′) → @ω CompRes Ξ Λ′ → WithBBs P Λ′) → WithBBs P Λ
+  -- joinPoint cr k = k ⊆-refl (crToGoto cr)
+  joinPoint cr k = let
+       (η₁ ∙ bbs₁ ∙ l)  = crToGoto' cr
+       (η₂ ∙ bbs₂ ∙ bb) = k η₁ (_ ∙ (λ _ → AllExt-id) ∙ goto l)
+    in ⊆-trans η₁ η₂ ∙ (λ ρ → AllExt-comp (bbs₁ (⊆-trans η₂ ρ)) (bbs₂ ρ)) ∙ bb
+
 
   fix : ∀ {Ξ Λ} → CompRes Ξ (Ξ ∷ Λ) → CompRes Ξ Λ
   fix (η ∙ bbs ∙ bb)
@@ -205,7 +210,7 @@ module _ (Σ : Sig) (rt : Type) where
     compileStm (sInit (just e))    = compileExp e ∘ crExec (scopeI decl) ∘ crExec (storeI (store vzero))
     compileStm (sBlock ss)         = crExec (scopeI newBlock) ∘ compileStms ss ∘ crExec (scopeI popBlock)
     compileStm (sWhile e s)      k = fix $ compileCond e (compileStm s $ crGoto here!) (crWeak wk1 k)
-    compileStm (sIfElse e s₁ s₂) k = joinPoint k λ k' → compileCond e (compileStm s₁ k') (compileStm s₂ k')
+    compileStm (sIfElse e s₁ s₂) k = joinPoint k λ ρ k' → compileCond e (compileStm s₁ k') (compileStm s₂ k')
 
     -- Compiling a statement list.
 
@@ -241,8 +246,8 @@ module _ (Σ : Sig) (rt : Type) where
       (kᵗ kᶠ : CompRes (Γ , Φ) Λ)
       → CompRes (Γ , Φ) Λ
 
-    compileCondOp (logic and) e e' kᵗ kᶠ = joinPoint kᶠ λ kf' → compileCond e (compileCond e' kᵗ kf') kf'
-    compileCondOp (logic or)  e e' kᵗ kᶠ = joinPoint kᵗ λ kt' → compileCond e kt' (compileCond e' kt' kᶠ)
+    compileCondOp (logic and) e e' kᵗ kᶠ = joinPoint kᶠ λ ρ kf' → compileCond e (compileCond e' (crWeak ρ kᵗ) kf') kf'
+    compileCondOp (logic or)  e e' kᵗ kᶠ = joinPoint kᵗ λ ρ kt' → compileCond e kt' (compileCond e' kt' $ crWeak ρ kᶠ)
     compileCondOp (cmp   op)  e e' kᵗ kᶠ =
       compileExp e  $
       compileExp e' $
@@ -261,7 +266,7 @@ module _ (Σ : Sig) (rt : Type) where
       ⇒ CompRes (Γ , Φ)
 
     compileBoolOp op e e' k =
-      joinPoint k λ k' →
+      joinPoint k λ ρ k' →
       compileCondOp op e e'
         (crExec (stackI (const true )) k')
         (crExec (stackI (const false)) k')

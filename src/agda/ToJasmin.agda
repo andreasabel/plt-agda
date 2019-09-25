@@ -28,6 +28,9 @@ _<t>_ = sep2By "\t"
 _<u>_ : String → String → String
 _<u>_ = sep2By "_"
 
+_</>_ : String → String → String
+_</>_ = sep2By "/"
+
 vsep : List (List String) → List String
 vsep = List.foldr (λ xs ys → xs ++ "" ∷ ys) []
 
@@ -266,18 +269,20 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
 FunNames : Sig → Set
 FunNames = AssocList String
 
-methodsToJVM : ∀ {Σ} → FunNames Σ → Meths Σ Σ → List String
-methodsToJVM funNames meths = vsep $ List.All.reduce methodToJVM $ List.All.zip (methodNames , meths)
+methodsToJVM : String → ∀ {Σ} → FunNames Σ → Meths Σ Σ → List String
+methodsToJVM className funNames meths = vsep $ List.All.reduce methodToJVM $ List.All.zip (methodNames , meths)
   where
   methodNames : AssocList String _
   methodNames = List.All.map (λ {ft} x → x <> funTypeToJVM ft) funNames
-  open MethodsToJVM methodNames
+  qualMethodNames : AssocList String _
+  qualMethodNames = List.All.map (className </>_) methodNames
+  open MethodsToJVM qualMethodNames
 
 programToJVM : String → ∀ {Σ} → FunNames Σ → Class Σ → List String
-programToJVM name funNames (program meths _) = vsep $ header ∷ init ∷ main ∷ methodsToJVM funNames meths ∷ []
+programToJVM className funNames (program meths _) = vsep $ header ∷ init ∷ main ∷ methodsToJVM className funNames meths ∷ []
   where
   header
-    = ".class public" <+> name
+    = ".class public" <+> className
     ∷ ".super java/lang/Object"
     ∷ []
   init
@@ -293,7 +298,7 @@ programToJVM name funNames (program meths _) = vsep $ header ∷ init ∷ main �
     = ".method public static main([Ljava/lang/String;)V"
     ∷ ".limit locals 1"
     ∷ ""
-    ∷ ("  invokestatic" <+> name <> "/main()I")
+    ∷ ("  invokestatic" <+> className <> "/main()I")
     ∷ "  pop"
     ∷ "  return"
     ∷ ""
