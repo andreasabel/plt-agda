@@ -89,11 +89,19 @@ module Integer where
 -- Lists.
 
 module List where
-  open import Data.List.Base public using ([_]; _++_; map; foldl; sum; fromMaybe)
+  open import Data.List.Base public using ([_]; _++_; concat; map; foldl; foldr; sum; fromMaybe)
   open import Data.List.All public using (All; []; _∷_) hiding (module All)
 
+  module Any where
+
+    open import Data.List.Any using (Any; here; there)
+
+    toℕ : ∀ {a p} {A : Set a} {P : A → Set p} {xs} → Any P xs → ℕ
+    toℕ (here  _) = zero
+    toℕ (there i) = suc (toℕ i)
+
   module All where
-    open import Data.List.All public using (lookup; map; tail)
+    open import Data.List.All public using (lookup; map; tail; tabulate; reduce; zip)
 
     -- Update function for All
 
@@ -304,6 +312,7 @@ module IOMonad where
 {-# FOREIGN GHC import qualified System.Exit #-}
 {-# FOREIGN GHC import qualified System.Environment #-}
 {-# FOREIGN GHC import qualified System.IO #-}
+{-# FOREIGN GHC import qualified System.FilePath #-}
 
 -- Binding more Haskell functions
 
@@ -314,6 +323,7 @@ postulate
   readFiniteFile : String → IO String
   readInt        : IO ℤ
   readDouble     : IO Float
+  takeBaseName   : String → String
 
 {-# COMPILE GHC exitFailure    = \ _ _ -> System.Exit.exitFailure #-}
 {-# COMPILE GHC getArgs        = map Data.Text.pack <$> System.Environment.getArgs #-}
@@ -321,6 +331,7 @@ postulate
 {-# COMPILE GHC readFiniteFile = Data.Text.IO.readFile . Data.Text.unpack #-}
 {-# COMPILE GHC readInt        = (System.IO.readLn :: System.IO.IO Integer) #-}
 {-# COMPILE GHC readDouble     = (System.IO.readLn :: System.IO.IO Double)  #-}
+{-# COMPILE GHC takeBaseName   = Data.Text.pack . System.FilePath.takeBaseName . Data.Text.unpack #-}
 
 -- Showing builtin types
 

@@ -327,6 +327,57 @@ module _ (Σ : Sig) (rt : Type) where
     compileExps []       = id
     compileExps (e ∷ es) = compileExp e ∘ compileExps es
 
+-- Method
+
+-- Meth : (Σ : Sig) (ft : FunType) → Set
+-- Meth Σ (funType Δ rt) = CompRes Σ rt (Δ ∷ [] , []) []
+
+record Meth (Σ : Sig) (ft : FunType) : Set where
+  constructor bbMethod
+  field
+    labels : Labels
+    entry  : let funType Δ rt = ft; Ξ = (Δ ∷ [] , []) in
+             BB Σ rt labels Ξ
+    blocks : let funType Δ rt = ft in
+             List.All (BB Σ rt labels) labels
+
+-- If the statements do not end in returns,
+-- a default value will be returned.
+
+bbDefaultReturn : ∀ {Σ Λ Ξ} rt → BB Σ rt Λ Ξ
+bbDefaultReturn (` t) = bbExec (stackI (const (defaultVal` t))) bbReturn
+bbDefaultReturn void  = bbReturn
+
+-- compileDef : ∀{Σ ft} → Def Σ ft → Meth Σ ft
+-- compileDef {Σ} {funType Δ rt} (Γ , ss) =
+--   compileStms Σ rt ss $ crBB Σ rt λ ρ → bbDefaultReturn rt
+
+compileDef : ∀{Σ ft} → Def Σ ft → Meth Σ ft
+compileDef {Σ} {funType Δ rt} (Γ , ss) = record
+  { labels = Λ
+  ; entry  = gotoToBB _ _ bb ⊆-refl
+  ; blocks = extendAll (bbs ⊆-refl) []
+  }
+  where
+  cr = compileStms Σ rt ss $ crBB Σ rt λ ρ → bbDefaultReturn rt
+  open WithBBs cr using (bbs) renaming (Ext to Λ; res to bb)
+
+-- Methods
+
+Meths : (Σ Σ' : Sig) → Set
+Meths Σ = List.All (Meth Σ)
+
+compilePrg : ∀{Σ Σ'} → Prg Σ Σ' → Meths Σ Σ'
+compilePrg = List.All.map compileDef
+
+-- Class
+
+Class : (Σ : Sig) → Set
+Class = Program' Meths
+
+compileProgram : ∀{Σ} → Program Σ → Class Σ
+compileProgram (program prg main) = program (compilePrg prg) main
+
 -- -}
 -- -}
 -- -}
