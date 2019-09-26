@@ -94,14 +94,17 @@ data Cond : (Φ Φ' : ST) → Set where
 
 module _ (Σ : Sig) where
 
+  data CallI : (Ξ Ξ' : MT) → Set where
+    call    : ∀{Γ Φ Δ rt} (f : funType Δ rt ∈ Σ)       → CallI (Γ , Δ ++ Φ) (Γ , Φ ▷ᵇ rt)
+    builtin : ∀{Γ Φ Δ rt} (b : Builtin (funType Δ rt)) → CallI (Γ , Δ ++ Φ) (Γ , Φ ▷ᵇ rt)
+
   -- Single jump-free instruction
 
   data JF : (Ξ Ξ' : MT) → Set where
     stackI  : ∀{Γ Φ Φ'} (j   : StackI   Φ Φ') → JF (Γ , Φ) (Γ , Φ')
     storeI  : ∀{Γ Φ Φ'} (j   : StoreI Γ Φ Φ') → JF (Γ , Φ) (Γ , Φ')
     scopeI  : ∀{Γ Γ' Φ} (adm : AdmScope Γ Γ') → JF (Γ , Φ) (Γ' , Φ)
-    call    : ∀{Γ Φ Δ rt} (f : funType Δ rt ∈ Σ)       → JF (Γ , Δ ++ Φ) (Γ , Φ ▷ᵇ rt)
-    builtin : ∀{Γ Φ Δ rt} (b : Builtin (funType Δ rt)) → JF (Γ , Δ ++ Φ) (Γ , Φ ▷ᵇ rt)
+    callI   : ∀{Ξ Ξ'}   (j   : CallI Ξ Ξ')    → JF Ξ Ξ'
 
   -- Within a method, the return type rt is fixed.
 
@@ -150,8 +153,8 @@ module _ (Σ : Sig) where
     pattern fcLoad   x fc = fcStoreI (load x) fc
     pattern fcIncDec b x fc = fcStoreI (incDec b x) fc
 
-    pattern fcCall    f fc = fcExec (call    f) fc
-    pattern fcBuiltin f fc = fcExec (builtin f) fc
+    pattern fcCall    f fc = fcExec (callI (call    f)) fc
+    pattern fcBuiltin f fc = fcExec (callI (builtin f)) fc
 
 -- Negating conditions
 

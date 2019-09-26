@@ -217,11 +217,11 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
   funToJVM = List.All.lookup funNames
 
   jfToJVM : ∀ {Ξ Ξ'} → JF Σ Ξ Ξ' → List String
-  jfToJVM (stackI j)   = List.fromMaybe $ stackIToJVM j
-  jfToJVM (storeI j)   = [ storeIToJVM j ]
-  jfToJVM (scopeI adm) = []
-  jfToJVM (call f)     = [ "invokestatic" <t> funToJVM f ]
-  jfToJVM (builtin b)  = [ "invokestatic" <t> "Runtime/" <> builtinToJVM _ b ]
+  jfToJVM (stackI j)          = List.fromMaybe $ stackIToJVM j
+  jfToJVM (storeI j)          = [ storeIToJVM j ]
+  jfToJVM (scopeI adm)        = []
+  jfToJVM (callI (call f))    = [ "invokestatic" <t> funToJVM f ]
+  jfToJVM (callI (builtin b)) = [ "invokestatic" <t> "Runtime/" <> builtinToJVM _ b ]
 
   module MethodToJVM (rt : Type) {Λ : Labels} (labelNames : AssocList String Λ) where
 

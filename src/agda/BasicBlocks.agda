@@ -23,6 +23,30 @@ module _ (Σ : Sig) (rt : Type) where
 
   BB′ = λ Ξ Λ → BB Λ Ξ
 
+  -- Execute j, then pop t.
+
+  bbStackIPop : ∀ {t Γ Φ Φ'} (j : StackI Φ (t ∷ Φ')) → BB′ (Γ , Φ') ⇒ BB′ (Γ , Φ)
+  bbStackIPop     (const v)  = id
+  bbStackIPop     dup        = id
+  bbStackIPop {t} pop        = bbExec (stackI pop)             ∘ bbExec (stackI (pop {t = ` t}))
+  bbStackIPop {t} (arith op) = bbExec (stackI (pop {t = ` t})) ∘ bbExec (stackI (pop {t = ` t}))
+
+  bbStoreIPop : ∀ {t Γ Φ Φ'} (j : StoreI Γ Φ (t ∷ Φ')) → BB′ (Γ , Φ') ⇒ BB′ (Γ , Φ)
+  bbStoreIPop (load x)     = id
+  bbStoreIPop (store x)    = bbExec (storeI (store x)) ∘ bbExec (stackI pop)
+  bbStoreIPop (incDec b x) = bbExec (stackI pop) ∘ bbExec (storeI (incDec b x))
+
+  -- bbExecPop : ∀ {Γ Φ Φ' t} (j : JF Σ (Γ , Φ) (Γ , t ∷ Φ')) → BB′ (Γ , Φ') ⇒ BB′ (Γ , Φ)
+  -- bbExecPop j = {!j!}
+
+  -- Smart cons, doing peephole optimizations.
+
+  bbExecOpt :  ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') → BB′ Ξ' ⇒ BB′ Ξ
+  bbExecOpt j          (bbExec (stackI (pop {t = void})) bb) = bbExec j bb
+  bbExecOpt (stackI j) (bbExec (stackI (pop {t = ` t })) bb) = bbStackIPop j bb
+  bbExecOpt (storeI j) (bbExec (stackI (pop {t = ` t })) bb) = bbStoreIPop j bb
+  bbExecOpt j bb = bbExec j bb
+
   -- Flatten out label definitions from a flow chart
 
   record Flat Λ Ξ : Set where
@@ -185,8 +209,15 @@ module _ (Σ : Sig) (rt : Type) where
   crIfElse c (ext₁ ∙ bbs₁ ∙ block bb₁) (ext₂ ∙ bbs₂ ∙ goto l₂  ) = crIf (negCond c) (ext₂ ∙ bbs₂ ∙ l₂) (ext₁ ∙ bbs₁ ∙ bb₁)
   crIfElse c cr₁@(_ ∙ _ ∙ block _)     (ext₂ ∙ bbs₂ ∙ block bb₂) = crIf c           (crToGoto' cr₁)    (ext₂ ∙ bbs₂ ∙ bb₂)
 
+  -- Non-optimizing:
+
+  crExec' : ∀{Ξ Ξ' Λ} (j : JF Σ Ξ Ξ') (bb : CompRes Ξ' Λ) → CompRes Ξ Λ
+  crExec' j = mapBBs λ k → block $ bbExec j ∘ gotoToBB k
+
+  -- Optimizing:
+
   crExec : ∀{Ξ Ξ' Λ} (j : JF Σ Ξ Ξ') (bb : CompRes Ξ' Λ) → CompRes Ξ Λ
-  crExec j = mapBBs λ k → block $ bbExec j ∘ gotoToBB k
+  crExec j = mapBBs λ k → block $ bbExecOpt j ∘ gotoToBB k
 
   crWeak : ∀{Ξ Λ Λ′} (ρ : Λ ⊆ Λ′) → CompRes Ξ Λ → CompRes Ξ Λ′
   crWeak ρ (η ∙ bbs ∙ res) = ξ₂ ∙ (λ τ → AllExt-slide (bbs (⊆-trans ξ₁ τ)) ρ) ∙ weakBOG ξ₁ res
@@ -280,10 +311,10 @@ module _ (Σ : Sig) (rt : Type) where
 
     compileExp (eConst v)            = crExec (stackI (const v))
     compileExp (eVar x)              = crExec (storeI (load x))
-    compileExp (eAss x e)            = compileExp e ∘ crExec (stackI dup) ∘ crExec (storeI (store x))
+    compileExp (eAss x e)            = compileExp e ∘ crExec (storeI (store x)) ∘ crExec (storeI (load x))
 
-    compileExp (eApp f es)           = compileExps es ∘ crExec (call f)
-    compileExp (eBuiltin f es)       = compileExps es ∘ crExec (builtin f)
+    compileExp (eApp f es)           = compileExps es ∘ crExec (callI (call f))
+    compileExp (eBuiltin f es)       = compileExps es ∘ crExec (callI (builtin f))
 
     compileExp (eOp (arith op) e e') = compileExp e ∘ compileExp e' ∘ crExec (stackI (arith op))
     compileExp (eOp (cmp   op) e e') = compileBoolOp (cmp op) e e'
@@ -298,15 +329,15 @@ module _ (Σ : Sig) (rt : Type) where
       = crExec (storeI (load x))
       ∘ crExec (stackI (const 1.0))
       ∘ crExec (stackI (arith (plus double)))
-      ∘ crExec (stackI dup)
       ∘ crExec (storeI (store x))
+      ∘ crExec (storeI (load x))
 
     compileExp (eIncrDecr pre  (decr double) x)
       = crExec (storeI (load x))
       ∘ crExec (stackI (const 1.0))
       ∘ crExec (stackI (arith (minus double)))
-      ∘ crExec (stackI dup)
       ∘ crExec (storeI (store x))
+      ∘ crExec (storeI (load x))
 
     compileExp (eIncrDecr post (incr double) x)
       = crExec (storeI (load x))
