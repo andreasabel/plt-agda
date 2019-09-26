@@ -126,12 +126,12 @@ inferExp = \case
     EDiv   e1 e2 -> inferArith e1 e2
     EPlus  e1 e2 -> inferArith e1 e2
     EMinus e1 e2 -> inferArith e1 e2
-    ELt    e1 e2 -> inferComp  e1 e2
-    EGt    e1 e2 -> inferComp  e1 e2
-    ELtEq  e1 e2 -> inferComp  e1 e2
-    EGtEq  e1 e2 -> inferComp  e1 e2
-    EEq    e1 e2 -> inferComp  e1 e2
-    ENEq   e1 e2 -> inferComp  e1 e2
+    ELt    e1 e2 -> inferComp True  e1 e2
+    EGt    e1 e2 -> inferComp True  e1 e2
+    ELtEq  e1 e2 -> inferComp True  e1 e2
+    EGtEq  e1 e2 -> inferComp True  e1 e2
+    EEq    e1 e2 -> inferComp False e1 e2
+    ENEq   e1 e2 -> inferComp False e1 e2
     EAnd   e1 e2 -> inferLogic e1 e2
     EOr    e1 e2 -> inferLogic e1 e2
     EAss   x  e  -> do
@@ -160,10 +160,11 @@ inferArith e e' = do
   return t
 
 -- | Infer type of comparison operation.
-inferComp :: Exp  -> Exp -> Check Type
-inferComp e e' = do
+inferComp :: Bool -> Exp -> Exp -> Check Type
+inferComp ineq e e' = do
   t <- notVoid =<< inferExp e
   checkExp e' t
+  when (t == Type_bool && ineq) $ throwError $ "illegal boolean comparison"
   return Type_bool
 
 -- | Infer type of logical operation.

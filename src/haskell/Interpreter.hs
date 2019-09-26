@@ -221,8 +221,9 @@ divide (VInt i)    (VInt i')    = VInt    $ i `div` i'
 divide (VDouble d) (VDouble d') = VDouble $ d / d'
 
 comp :: (forall a. Ord a => a -> a -> Bool) -> Val -> Val -> Val
-comp op (VInt i)    (VInt i')    = VBool $ op i i'
+comp op (VInt    i) (VInt    i') = VBool $ op i i'
 comp op (VDouble d) (VDouble d') = VBool $ op d d'
+comp op (VBool   b) (VBool   b') = VBool $ op b b'
 
 -- * Primitive functions
 
