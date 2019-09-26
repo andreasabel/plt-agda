@@ -140,6 +140,8 @@ module _ (Σ : Sig) (Γ : Cxt) where
       eOp        : ∀{t t'} (op : Op t t') (e e' : Exp` t)               → Exp` t'
       eAss       : ∀{t}    (x : Var Γ t) (e : Exp` t)                   → Exp` t
 
+pattern eZero = eConst {t = int} (+ 0)
+
 -- Well-typed statements (might extend the context)
 
 module _ (Σ : Sig) (returnType : Type) where
@@ -249,3 +251,13 @@ negCmpOp (ltEq a) = gt a
 negCmpOp (gtEq a) = lt a
 negCmpOp eq       = nEq
 negCmpOp nEq      = eq
+
+-- Flipping comparison: > becomes < etc.
+
+flipCmpOp : ∀{t} → CmpOp t → CmpOp t
+flipCmpOp (lt a)   = gt a
+flipCmpOp (gt a)   = lt a
+flipCmpOp (ltEq a) = gtEq a
+flipCmpOp (gtEq a) = ltEq a
+flipCmpOp eq       = eq
+flipCmpOp nEq      = nEq

@@ -85,9 +85,9 @@ data AdmScope : (Γ Γ' : Cxt) → Set where
 -- Conditions for jumps
 
 data Cond : (Φ Φ' : ST) → Set where
-  cmp    : ∀{Φ t} (cmp : CmpOp t) → Cond (t ∷ t ∷ Φ) Φ
-  eqBool : ∀{Φ}   (b : Bool)      → Cond (bool ∷ Φ)  Φ
-  eqZero : ∀{Φ}   (b : Bool)      → Cond (int ∷ Φ)   Φ
+  cmp     : ∀{Φ t} (cmp : CmpOp t)   → Cond (t ∷ t ∷ Φ) Φ
+  cmpZero : ∀{Φ}   (cmp : CmpOp int) → Cond (int ∷ Φ)   Φ
+  eqBool  : ∀{Φ}   (b : Bool)        → Cond (bool ∷ Φ)  Φ
 
 
 -- The following definitions are relative to a signature Σ of function symbols.
@@ -159,9 +159,9 @@ module _ (Σ : Sig) where
 -- Negating conditions
 
 negCond : ∀{Φ Φ'} → Cond Φ Φ' → Cond Φ Φ'
-negCond (cmp op)   = cmp (negCmpOp op)
-negCond (eqBool b) = eqBool (not b)
-negCond (eqZero b) = eqZero (not b)
+negCond (cmp     op) = cmp     (negCmpOp op)
+negCond (cmpZero op) = cmpZero (negCmpOp op)
+negCond (eqBool  b)  = eqBool  (not b)
 
 -- -}
 -- -}

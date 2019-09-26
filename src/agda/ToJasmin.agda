@@ -184,9 +184,8 @@ cmpToJVM l double op = "dcmpg" ∷ dcmpToJVM l op  -- dcmpg returns sign of subt
 condToJVM : String → ∀ {Φ Φ'} → Cond Φ Φ' → List String
 condToJVM l (eqBool false) = [ "ifeq" <t> l ]
 condToJVM l (eqBool true ) = [ "ifne" <t> l ]
-condToJVM l (eqZero true ) = [ "ifeq" <t> l ]
-condToJVM l (eqZero false) = [ "ifne" <t> l ]
-condToJVM l (cmp op) = cmpToJVM l _ op
+condToJVM l (cmpZero op  ) = [ "if" <> cmpOpToJVM op <t> l ]
+condToJVM l (cmp     op  ) = cmpToJVM l _ op
 
 record BBToJVM : Set where
   constructor _∙_∙_

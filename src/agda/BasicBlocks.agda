@@ -279,10 +279,15 @@ module _ (Σ : Sig) (rt : Type) where
 
     compileCondOp (logic and) e e' kᵗ kᶠ = joinPoint kᶠ λ ρ kf' → compileCond e (compileCond e' (crWeak ρ kᵗ) kf') kf'
     compileCondOp (logic or)  e e' kᵗ kᶠ = joinPoint kᵗ λ ρ kt' → compileCond e kt' (compileCond e' kt' $ crWeak ρ kᶠ)
+
+    compileCondOp (cmp   op)  e eZero kᵗ kᶠ = compileExp e $ crIfElse (cmpZero op) kᵗ kᶠ
+    compileCondOp (cmp   op)  eZero e kᵗ kᶠ = compileExp e $ crIfElse (cmpZero (flipCmpOp op)) kᵗ kᶠ
+
     compileCondOp (cmp   op)  e e' kᵗ kᶠ =
       compileExp e  $
       compileExp e' $
       crIfElse (cmp op) kᵗ kᶠ
+
     compileCondOp (arith (plus ()))
     compileCondOp (arith (minus ()))
     compileCondOp (arith (times ()))
