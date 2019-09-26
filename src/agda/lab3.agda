@@ -8,6 +8,12 @@ open import TypeChecker using (printError; module CheckProgram)
 open import BasicBlocks using (compileProgram)
 open import ToJasmin    using (programToJVM)
 
+-- Other modules, not used here
+import Environment
+import Evaluation
+import Interpreter
+import CompileToFC
+
 check : String → String → String → IO ⊤
 check dir name contents = do
   case parseProgram contents of λ where

@@ -8,3 +8,5 @@ Bug*.agda
 MAlonzo
 /src/haskell/CPP/
 /src/agda/lab3
+/src/agda/test/*.class
+/src/agda/*.j

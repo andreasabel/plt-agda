@@ -8,6 +8,8 @@ ghcflags=--ghc-flag=-i../haskell --ghc-flag=-Wwarn
 
 # Must be first goal...
 
+default : lab3
+
 lab3 : lab3.agda $(agdafiles)
 	$(agda) --compile $(ghcflags) $<
 
