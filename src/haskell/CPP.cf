@@ -30,7 +30,7 @@ EInt.    Exp15  ::= Integer ;
 EDouble. Exp15  ::= Double ;
 EId.     Exp15  ::= Id ;
 
-EApp.    Exp14  ::= Id "(" [Exp] ")" ;  -- Restricted to Id.
+EApp.    Exp14  ::= Id "(" Exps ")" ;   -- Restricted to Id.
 
 EPostIncr.  Exp14  ::= Id "++" ;        -- Restricted to Id.
 EPostDecr.  Exp14  ::= Id "--" ;        -- Restricted to Id.
@@ -66,7 +66,14 @@ EAss.    Exp2   ::= Id    "="  Exp2  ;  -- Right assoc.  Restricted to Id.
 
 coercions Exp 15 ;
 
-separator Exp "," ;
+-- Use snoc-list for argument lists instead of builtin cons list.
+-- separator Exp "," ;
+
+ENil.  Exps ::=              ;
+eSg.   Exps ::= Exp          ;
+ESnoc. Exps ::= Exps "," Exp ;
+
+define eSg e = ESnoc ENil e  ;
 
 -- Types and identifiers
 

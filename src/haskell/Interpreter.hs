@@ -103,15 +103,17 @@ evalExp = \case
     EInt i    -> return $ VInt i
     EDouble d -> return $ VDouble d
     EId x     -> lookupEnv' x
-    EApp f es -> handlePrimitive f es $ do
+    EApp f es0 -> handlePrimitive f es $ do
       vs <- mapM evalExp es
       FunDef xs ss <- fromMaybe (error $ "unbound function" ++ printTree f) . Map.lookup f <$> ask
       guard $ length xs == length vs
       inNewBlock $ do
         zipWithM_ newVar xs vs
         fromRet <$> evalStms ss
-      where fromRet (Ret v) = v
-            fromRet Cont    = VVoid
+      where
+      es = expsToList es0
+      fromRet (Ret v) = v
+      fromRet Cont    = VVoid
     EPostIncr x -> do
       v <- lookupEnv' x
       assignVar x $ successor v
@@ -241,3 +243,13 @@ handlePrimitive (Id f) es fallback =
       liftIO $ putStrLn $ show d
       return VVoid
     _ -> fallback
+
+-- * AST utils
+
+-- Convert Snoc-list to cons list
+
+expsToList :: Exps -> [Exp]
+expsToList = loop []
+  where
+  loop acc ENil         = acc
+  loop acc (ESnoc es e) = loop (e : acc) es

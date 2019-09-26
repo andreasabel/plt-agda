@@ -257,7 +257,7 @@ module CheckExpressions {Σ : Sig} {Γ : Cxt} (ξ : TCEnv Σ Γ) where
 
     inferExp (A.eApp x es) = do
       (funType Δ t , k) ← lookupFun (idToName x)
-      es' ← checkExps (List.reverse es) Δ
+      es' ← checkExps es Δ
       case k of λ where
         (inj₁ b) → return (t , eBuiltin b es')
         (inj₂ f) → return (t , eApp f es')
@@ -311,12 +311,11 @@ module CheckExpressions {Σ : Sig} {Γ : Cxt} (ξ : TCEnv Σ Γ) where
 
     -- Check a list of function arguments.
 
-    checkExps : (es : List A.Exp) (Δ : Block) → M (Exps Σ Γ Δ)
-    checkExps []       []      = return []
-    checkExps []       (t ∷ Δ) = throwError tooFewArguments
-    checkExps (e ∷ es) []      = throwError tooManyArguments
-    checkExps (e ∷ es) (t ∷ Δ) = do
-      -- e should be checked after es as we have reversed the argument list
+    checkExps : (es : A.Exps) (Δ : Block) → M (Exps Σ Γ Δ)
+    checkExps A.eNil         []      = return []
+    checkExps A.eNil         (t ∷ Δ) = throwError tooFewArguments
+    checkExps (A.eSnoc es e) []      = throwError tooManyArguments
+    checkExps (A.eSnoc es e) (t ∷ Δ) = do
       es' ← checkExps es Δ
       e'  ← checkExp` e t
       return (e' ∷ es')  -- Last argument is first in list

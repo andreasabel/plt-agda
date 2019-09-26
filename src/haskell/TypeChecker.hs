@@ -21,6 +21,8 @@ import CPP.Abs
 import CPP.Print
 import CPP.ErrM
 
+import Interpreter (expsToList)
+
 type NEList = NEList.NonEmpty
 
 -- | The signature maps function identifiers to the list of their parameters and the return type.
@@ -116,7 +118,7 @@ inferExp = \case
     EApp f es -> (Map.lookup f <$> ask) >>= \case
       Nothing -> throwError $ "unbound function " ++ printTree f
       Just (FunType t args) -> do
-        checkExps es args
+        checkExps (expsToList es) args
         return t
     EPostIncr x  -> numericType =<< lookupVar x
     EPostDecr x  -> numericType =<< lookupVar x
