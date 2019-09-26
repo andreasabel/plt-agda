@@ -22,6 +22,7 @@ open import Data.List.Base    public using (List; []; _∷_; _++_) hiding (modul
 open import Data.List.Membership.Propositional public using (_∈_; _∉_)
 open import Data.List.Relation.Unary.All public using ([]; _∷_; updateAt)
 open import Data.List.Relation.Unary.Any public using (here; there)
+open import Data.List.Relation.Unary.Any.Properties public using (there-injective)
 open import Data.List.NonEmpty public using (List⁺; _∷_; _∷⁺_) hiding (module List⁺)
 open import Data.List.Relation.Binary.Sublist.Propositional public
   using (RawPushout; ⊆-pushoutˡ)
@@ -35,7 +36,7 @@ open import Data.Maybe.Base   public using (Maybe; nothing; just)
 open import Data.Nat.Base     public using (ℕ; zero; suc; _+_; _≤_; s≤s) hiding (module ℕ)
 -- renaming (_≤′_ to _≤_; ≤′-refl to ≤-refl)
 open import Data.Nat.Properties public using (+-identityʳ)
-open import Data.Product      public using (∃; ∃₂; _×_; _,_; proj₁; proj₂; map₂)
+open import Data.Product      public using (∃; ∃₂; _×_; _,_; proj₁; proj₂; map₂; uncurry)
   renaming (map to ∃-map)
 open import Data.String.Base  public using (String)
 open import Data.Sum.Base     public using (_⊎_; inj₁; inj₂)
@@ -46,10 +47,10 @@ open import Level             public using (Level; _⊔_)
 
 open import IO.Primitive      public using (IO)
 
-open import Relation.Binary.PropositionalEquality public using (_≗_; _≡_; refl; cong; subst)
+open import Relation.Binary.PropositionalEquality public using (_≗_; _≡_; refl; trans; cong; subst)
 open import Relation.Binary public using (Decidable; Rel)
 open import Relation.Nullary public using (¬_; Dec; yes; no)
-open import Relation.Nullary.Decidable public using (⌊_⌋)
+open import Relation.Nullary.Decidable public using (⌊_⌋) renaming (map′ to mapDec)
 open import Relation.Unary public using (_∩_) renaming (_⊆_ to _⇒_)
 
 open import Size public
@@ -68,6 +69,7 @@ module Bool where
 
 module ℕ where
   open import Data.Nat.Base public
+  open import Data.Nat.Properties public
 
 module Integer where
   open import Data.Integer public
@@ -103,25 +105,54 @@ module List where
     toℕ (here  _) = zero
     toℕ (there i) = suc (toℕ i)
 
+  module Membership where
+
+    module _ {a} {A : Set a} where
+
+      -- Equality of indices (uses K)
+
+      _≟_ : ∀{x : A} {xs : List A} → Decidable (_≡_ {A = x ∈ xs})
+      there i ≟ there j = mapDec (cong there) there-injective (i ≟ j)
+      there _ ≟ here _  = no λ()
+      here  _ ≟ there _ = no λ()
+      here!   ≟ here!   = yes refl
+
+      sameIndex : ∀ {x y} {xs : List A} (i : x ∈ xs) (j : y ∈ xs) → Dec (∃ λ x≡y → subst (_∈ xs) x≡y i ≡ j)
+      sameIndex (there i) (there j) = mapDec
+        (λ { (refl , eq) → refl , cong there eq      })
+        (λ { (refl , eq) → refl , there-injective eq })
+        (sameIndex i j)
+      sameIndex (there _) (here  _) = no λ{ (refl , ()) }
+      sameIndex (here  _) (there _) = no λ{ (refl , ()) }
+      sameIndex (here!  ) (here!  ) = yes (refl , refl)
+
   module All where
     open import Data.List.All public using (lookup; map; tail; tabulate; reduce; zip)
 
-    -- Update function for All
+    module _ {a p} {A : Set a} {P : A → Set p} where
 
-    data UpdateAt {a p r} {A : Set a} {P : A → Set p} {x} (R : Rel (P x) r)
-      : ∀ {xs} (x∈xs : x ∈ xs) (vs vs' : All P xs) → Set r where
+      indices : ∀ {xs : List A} → All (_∈ xs) xs
+      indices = tabulate id
 
-      here : ∀{xs} {vs : All P xs} {v v' : P x}
-        → R v v'
-        → UpdateAt R (here refl) (v ∷ vs) (v' ∷ vs)
+      reduceWithIndex : ∀ {b} {B : Set b} {xs : List A}
+        (f : ∀ {x} → x ∈ xs → P x → B) → All P xs → List B
+      reduceWithIndex f pxs = reduce (uncurry f) $ zip (indices , pxs)
 
-      there : ∀{xs} {x∈xs : x ∈ xs} {vs vs' : All P xs} {y} {w : P y}
-        → UpdateAt R x∈xs vs vs'
-        → UpdateAt R (there x∈xs) (w ∷ vs) (w ∷ vs')
+      -- Update function for All
 
-    Update : ∀ {a p} {A : Set a} {P : A → Set p} {x xs}
-             (v : P x) (x∈xs : x ∈ xs) (vs vs' : All P xs) → Set p
-    Update v = UpdateAt (λ _ → (v ≡_))
+      data UpdateAt {r} {x} (R : Rel (P x) r)
+        : ∀ {xs} (x∈xs : x ∈ xs) (vs vs' : All P xs) → Set r where
+
+        here : ∀{xs} {vs : All P xs} {v v' : P x}
+          → R v v'
+          → UpdateAt R (here refl) (v ∷ vs) (v' ∷ vs)
+
+        there : ∀{xs} {x∈xs : x ∈ xs} {vs vs' : All P xs} {y} {w : P y}
+          → UpdateAt R x∈xs vs vs'
+          → UpdateAt R (there x∈xs) (w ∷ vs) (w ∷ vs')
+
+      Update : ∀ {x xs} (v : P x) (x∈xs : x ∈ xs) (vs vs' : All P xs) → Set p
+      Update v = UpdateAt (λ _ → (v ≡_))
 
 open List.All public using (here; there)
 

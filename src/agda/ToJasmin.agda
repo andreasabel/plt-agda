@@ -198,12 +198,18 @@ record BBToJVM : Set where
 emit : (Ξ : MT) → List String → BBToJVM
 emit (Γ , Φ) ss = cxtMemSize (List⁺.toList Γ) ∙ blockMemSize Φ ∙ List.map ("\t" <>_) ss
 
+mempty : BBToJVM
+mempty = 0 ∙ 0 ∙ []
+
+unless : Bool → BBToJVM → BBToJVM
+unless true  _ = mempty
+unless false = id
+
 _◇_ : (c c' : BBToJVM) → BBToJVM
 (maxStore₁ ∙ maxStack₁ ∙ code₁) ◇ (maxStore₂ ∙ maxStack₂ ∙ code₂)
   = (maxStore₁ ℕ.⊔ maxStore₂)
   ∙ (maxStack₁ ℕ.⊔ maxStack₂)
   ∙ (code₁ ++ code₂)
-
 
 module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
 
@@ -222,12 +228,23 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
     labelToJVM : ∀{Ξ} (l : Ξ ∈ Λ) → String
     labelToJVM = List.All.lookup labelNames
 
-    bbToJVM : ∀ Ξ (bb : BB Σ rt Λ Ξ) → BBToJVM
-    bbToJVM Ξ (bbExec j bb) = emit Ξ (jfToJVM j) ◇ bbToJVM _ bb
-    bbToJVM Ξ (bbGoto l)    = emit Ξ [ "goto" <t> labelToJVM l ]
-    bbToJVM Ξ bbReturn      = emit Ξ [ typePrefix rt "return" ]
-    bbToJVM Ξ (bbIf c l bb) = emit Ξ (condToJVM (labelToJVM l) c) ◇ bbToJVM _ bb
-    bbToJVM Ξ (bbIfElse c bb bb₁) = impossible where postulate impossible : _
+    -- We drop goto L(n+1) from the end of block L(n).
+
+    isNextBlock : ∀{Ξ'} (ml : Maybe (∃ λ Ξ → Ξ ∈ Λ)) (l' : Ξ' ∈ Λ) → Bool
+    isNextBlock nothing        (here  _ ) = true
+    isNextBlock (just (Ξ , l)) (there l') = ⌊ List.Any.toℕ l ℕ.≟ List.Any.toℕ l' ⌋
+      -- isNextBlock (just (Ξ , l)) (there l') = ⌊ List.Membership.sameIndex l (⊆-lookup wk1 l') ⌋
+      -- WRONG, as  ⊆-lookup wk1  reintroduces the  there
+    isNextBlock _ _ = false
+
+    module _ (ml : Maybe (∃ λ Ξ′ → Ξ′ ∈ Λ)) where
+
+      bbToJVM : ∀ Ξ (bb : BB Σ rt Λ Ξ) → BBToJVM
+      bbToJVM Ξ (bbExec j bb) = emit Ξ (jfToJVM j) ◇ bbToJVM _ bb
+      bbToJVM Ξ (bbGoto l)    = unless (isNextBlock ml l) $ emit Ξ [ "goto" <t> labelToJVM l ]
+      bbToJVM Ξ bbReturn      = emit Ξ [ typePrefix rt "return" ]
+      bbToJVM Ξ (bbIf c l bb) = emit Ξ (condToJVM (labelToJVM l) c) ◇ bbToJVM _ bb
+      bbToJVM Ξ (bbIfElse c bb bb₁) = impossible where postulate impossible : _
 
 
     -- -- bbsToJVM : ∀{Λ′} → List.All (BB Σ rt Λ) Λ′ → BBToJVM
@@ -243,7 +260,7 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
   --   open MethodToJVM rt labelNames
 
   methToJVM : ∀ rt {Δ} → Meth Σ (funType Δ rt) → BBToJVM
-  methToJVM rt (bbMethod Λ entry blocks) = bbToJVM _ entry ◇ blocksToJVM
+  methToJVM rt (bbMethod Λ entry blocks) = bbToJVM nothing _ entry ◇ blocksToJVM
     where
 
     labelNames : AssocList String Λ
@@ -251,12 +268,12 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
 
     open MethodToJVM rt labelNames
 
-    blockToJVM : ∀{Ξ} → String × BB Σ rt Λ Ξ → BBToJVM
-    blockToJVM (l , bb) = record out { code = (l <> ":") ∷ BBToJVM.code out }
-      where out = bbToJVM _ bb
+    blockToJVM : ∀{Ξ} (l : Ξ ∈ Λ) → String × BB Σ rt Λ Ξ → BBToJVM
+    blockToJVM l (ls , bb) = record out { code = (ls <> ":") ∷ BBToJVM.code out }
+      where out = bbToJVM (just (_ , l)) _ bb
 
     blocksToJVM : BBToJVM
-    blocksToJVM = List.foldr _◇_ (0 ∙ 0 ∙ []) $ List.All.reduce blockToJVM $ List.All.zip (labelNames , blocks)
+    blocksToJVM = List.foldr _◇_ mempty $ List.All.reduceWithIndex blockToJVM $ List.All.zip (labelNames , blocks)
 
   methodToJVM : ∀{ft} → String × Meth Σ ft → List String
   methodToJVM (name , meth) with methToJVM _ meth
