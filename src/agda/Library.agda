@@ -61,7 +61,7 @@ pattern here! = here refl
 -- module ∃ = Data.Product -- bad idea, Agda's printer cannot deal with it
 
 module Bool where
-  open import Data.Bool public using (_≟_)
+  open import Data.Bool public using (_≟_; _∧_)
 
   _==_ : (b b' : Bool) → Bool
   b == b' = ⌊ b ≟ b' ⌋
@@ -71,6 +71,8 @@ module ℕ where
 
 module Integer where
   open import Data.Integer public
+
+  infix 1 _==_ _<=_
 
   _==_ : (i j : ℤ) → Bool
   i == j = ⌊ i ≟ j ⌋

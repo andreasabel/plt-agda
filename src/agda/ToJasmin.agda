@@ -34,6 +34,10 @@ _</>_ = sep2By "/"
 vsep : List (List String) → List String
 vsep = List.foldr (λ xs ys → xs ++ "" ∷ ys) []
 
+isByte : ℤ → Bool
+isByte i = (i <= + 127) Bool.∧ (-[1+ 127 ] <= i)
+  where open Integer
+
 -- Printing monad
 
 iconstToJVM : ℤ → String
@@ -44,8 +48,7 @@ iconstToJVM (+_ 3) = "iconst_3"
 iconstToJVM (+_ 4) = "iconst_4"
 iconstToJVM (+_ 5) = "iconst_5"
 iconstToJVM (-[1+ 0 ]) = "iconst_m1"
-iconstToJVM i = "ldc" <t> printInt i
-  -- TODO: isByte i -> "bipush " <> show i
+iconstToJVM i = (if isByte i then "bipush" else "ldc") <t> printInt i
 
 constToJVM : ∀ t → Val` t → String
 constToJVM int        = iconstToJVM
