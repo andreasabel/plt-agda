@@ -105,6 +105,7 @@ module _ (Σ : Sig) where
     storeI  : ∀{Γ Φ Φ'} (j   : StoreI Γ Φ Φ') → JF (Γ , Φ) (Γ , Φ')
     scopeI  : ∀{Γ Γ' Φ} (adm : AdmScope Γ Γ') → JF (Γ , Φ) (Γ' , Φ)
     callI   : ∀{Ξ Ξ'}   (j   : CallI Ξ Ξ')    → JF Ξ Ξ'
+    comment : ∀{Ξ}      (rem : List String)   → JF Ξ Ξ
 
   -- Within a method, the return type rt is fixed.
 

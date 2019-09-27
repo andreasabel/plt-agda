@@ -18,7 +18,7 @@ open import Data.Char.Base    public using (Char)
 open import Data.Empty        public using (⊥)
 -- open import Data.Fin          public using (Fin; zero; suc)
 open import Data.Integer.Base public using (ℤ; -[1+_]; +_) -- ; _+_; _-_; _*_)
-open import Data.List.Base    public using (List; []; _∷_; _++_) hiding (module List)
+open import Data.List.Base    public using (List; []; _∷_; [_]; _++_) hiding (module List)
 open import Data.List.Membership.Propositional public using (_∈_; _∉_)
 open import Data.List.Relation.Unary.All public using ([]; _∷_; updateAt)
 open import Data.List.Relation.Unary.Any public using (here; there)
@@ -38,7 +38,7 @@ open import Data.Nat.Base     public using (ℕ; zero; suc; _+_; _≤_; s≤s) h
 open import Data.Nat.Properties public using (+-identityʳ)
 open import Data.Product      public using (∃; ∃₂; _×_; _,_; proj₁; proj₂; map₂; uncurry)
   renaming (map to ∃-map)
-open import Data.String.Base  public using (String)
+open import Data.String.Base  public using (String) renaming (_++_ to _<>_)
 open import Data.Sum.Base     public using (_⊎_; inj₁; inj₂)
 open import Data.Unit.Base    public using (⊤)
 
@@ -286,6 +286,45 @@ module List⁺ where
 
 module String where
   open import Data.String.Base public
+
+-- Pretty printing
+
+parens : String → String
+parens s = "(" <> s <> ")"
+
+sep2By : String → String → String → String
+sep2By sep s s' = s <> sep <> s'
+
+infixl 6 _<+>_ _<t>_ _<u>_
+
+_<+>_ : String → String → String
+_<+>_ = sep2By " "
+
+_<t>_ : String → String → String
+_<t>_ = sep2By "\t"
+
+_<u>_ : String → String → String
+_<u>_ = sep2By "_"
+
+_</>_ : String → String → String
+_</>_ = sep2By "/"
+
+_<,>_ : String → String → String
+_<,>_ = sep2By ", "
+
+c>_ : String → String
+c>_ = ";;" <+>_
+
+t>_ : String → String
+t> "" = ""
+t>_   = "\t" <>_
+
+vcat : List (List String) → List String
+vcat = List.concat
+
+vsep : List (List String) → List String
+vsep = List.foldr (λ xs ys → xs ++ "" ∷ ys) []
+
 
 -- Place overloaded monad operation in module
 

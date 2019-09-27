@@ -3,8 +3,9 @@ module BasicBlocks where
 open import Library
 open import Library.AllExt
 
-open import WellTypedSyntax
 open import Value
+open import WellTypedSyntax
+open import InternalToAbstract
 open import FlowChart
 
 module _ (Σ : Sig) (rt : Type) where
@@ -42,9 +43,12 @@ module _ (Σ : Sig) (rt : Type) where
   -- Smart cons, doing peephole optimizations.
 
   bbExecOpt :  ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') → BB′ Ξ' ⇒ BB′ Ξ
-  bbExecOpt j          (bbExec (stackI (pop {t = void})) bb) = bbExec j bb
-  bbExecOpt (stackI j) (bbExec (stackI (pop {t = ` t })) bb) = bbStackIPop j bb
-  bbExecOpt (storeI j) (bbExec (stackI (pop {t = ` t })) bb) = bbStoreIPop j bb
+  bbExecOpt j            (bbExec (stackI (pop {t = void})) bb) = bbExec j bb
+  bbExecOpt (stackI  j)  (bbExec (stackI (pop {t = ` t })) bb) = bbStackIPop j bb
+  bbExecOpt (storeI  j)  (bbExec (stackI (pop {t = ` t })) bb) = bbStoreIPop j bb
+  bbExecOpt (comment x)  (bbExec (stackI (pop {t = ` t })) bb) = bbExec (stackI pop) $ bbExec (comment x) bb
+  bbExecOpt (comment x)  (bbExec (comment y)               bb) = bbExec (comment $ x ++ y) bb
+  bbExecOpt (scopeI adm) (bbExec (comment x)               bb) = bbExec (comment x) $ bbExec (scopeI adm) bb  -- HACK to join comments over "empty" instructions
   bbExecOpt j bb = bbExec j bb
 
   -- Flatten out label definitions from a flow chart
@@ -147,6 +151,13 @@ module _ (Σ : Sig) (rt : Type) where
     -- bbs   : □ (λ Λ′ → AllExt (BB Λ′) η) Λ₁₂
     -- bbs   = λ τ → AllExt-join (bbs₁ (⊆-trans ξ₁ τ)) (bbs₂ (⊆-trans ξ₂ τ))
 
+  crWeak : ∀{Ξ Λ Λ′} (ρ : Λ ⊆ Λ′) → CompRes Ξ Λ → CompRes Ξ Λ′
+  crWeak ρ (η ∙ bbs ∙ res) = ξ₂ ∙ (λ τ → AllExt-slide (bbs (⊆-trans ξ₁ τ)) ρ) ∙ weakBOG ξ₁ res
+    where
+    rpo   = ⊆-pushoutˡ η ρ
+    ξ₁    = RawPushout.leg₁ rpo
+    ξ₂    = RawPushout.leg₂ rpo
+
   crGoto : ∀{Ξ Λ} (l : Ξ ∈ Λ) → CompRes Ξ Λ
   crGoto l = _ ∙ (λ ρ → AllExt-id) ∙ goto λ ρ → ⊆-lookup ρ l
 
@@ -219,12 +230,14 @@ module _ (Σ : Sig) (rt : Type) where
   crExec : ∀{Ξ Ξ' Λ} (j : JF Σ Ξ Ξ') (bb : CompRes Ξ' Λ) → CompRes Ξ Λ
   crExec j = mapBBs λ k → block $ bbExecOpt j ∘ gotoToBB k
 
-  crWeak : ∀{Ξ Λ Λ′} (ρ : Λ ⊆ Λ′) → CompRes Ξ Λ → CompRes Ξ Λ′
-  crWeak ρ (η ∙ bbs ∙ res) = ξ₂ ∙ (λ τ → AllExt-slide (bbs (⊆-trans ξ₁ τ)) ρ) ∙ weakBOG ξ₁ res
-    where
-    rpo   = ⊆-pushoutˡ η ρ
-    ξ₁    = RawPushout.leg₁ rpo
-    ξ₂    = RawPushout.leg₂ rpo
+  crComment :  ∀{Ξ Λ} (x : String) (bb : CompRes Ξ Λ) → CompRes Ξ Λ
+  crComment x = crExec (comment [ x ])
+
+  commentStm :  ∀ {Γ mt Φ}
+      → Stm Σ rt Γ mt
+      → CompRes (Γ , Φ)
+      ⇒ CompRes (Γ , Φ)
+  commentStm s = crComment (printStm s)
 
   mutual
 
@@ -235,13 +248,15 @@ module _ (Σ : Sig) (rt : Type) where
       → CompRes (Γ ▷ mt , Φ)
       ⇒ CompRes (Γ , Φ)
 
-    compileStm (sReturn e)       _ = compileExp e $ crBB λ ρ → bbReturn
-    compileStm (sExp e)            = compileExp e ∘ crExec (stackI pop)
-    compileStm (sInit x nothing)   = crExec (scopeI (decl x))
-    compileStm (sInit x (just e))  = compileExp e ∘ crExec (scopeI (decl x)) ∘ crExec (storeI (store (vzero x)))
-    compileStm (sBlock ss)         = crExec (scopeI newBlock) ∘ compileStms ss ∘ crExec (scopeI popBlock)
-    compileStm (sWhile e s)      k = fix $ compileCond e (compileStm s $ crGoto here!) (crWeak wk1 k)
-    compileStm (sIfElse e s₁ s₂) k = joinPoint k λ ρ k' → compileCond e (compileStm s₁ k') (compileStm s₂ k')
+    compileStm s@(sReturn e)       _ = commentStm s $ compileExp e $ crBB λ ρ → bbReturn
+    compileStm s@(sExp e)            = commentStm s ∘ compileExp e ∘ crExec (stackI pop)
+    compileStm s@(sInit x nothing)   = commentStm s ∘ crExec (scopeI (decl x))
+    compileStm s@(sInit x (just e))  = commentStm s ∘ compileExp e ∘ crExec (scopeI (decl x)) ∘ crExec (storeI (store (vzero x)))
+    compileStm s@(sBlock ss)         = crExec (scopeI newBlock) ∘ compileStms ss ∘ crExec (scopeI popBlock)
+    compileStm s@(sWhile e s₀)     k = crComment ("while" <+> parens (printExp e)) $
+                                       fix $ compileCond e (compileStm s₀ $ crGoto here!) (crWeak wk1 k)
+    compileStm s@(sIfElse e s₁ s₂) k = crComment ("if" <+> parens (printExp e)) $
+                                       joinPoint k λ ρ k' → compileCond e (compileStm s₁ k') (compileStm s₂ k')
 
     -- Compiling a statement list.
 

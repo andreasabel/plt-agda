@@ -1,38 +1,13 @@
 module ToJasmin where
 
-open import Library; open String renaming (_++_ to _<>_); open List using ([_])
+open import Library
 open import Library.AllExt
 
 open import Value
 open import WellTypedSyntax
+open import InternalToAbstract
 open import FlowChart
 open import BasicBlocks
-
--- cat2 : String → String → String
--- cat2 = String._++_
-
-parens : String → String
-parens s = "(" <> s <> ")"
-
-sep2By : String → String → String → String
-sep2By sep s s' = s <> sep <> s'
-
-infixl 6 _<+>_ _<t>_ _<u>_
-
-_<+>_ : String → String → String
-_<+>_ = sep2By " "
-
-_<t>_ : String → String → String
-_<t>_ = sep2By "\t"
-
-_<u>_ : String → String → String
-_<u>_ = sep2By "_"
-
-_</>_ : String → String → String
-_</>_ = sep2By "/"
-
-vsep : List (List String) → List String
-vsep = List.foldr (λ xs ys → xs ++ "" ∷ ys) []
 
 isByte : ℤ → Bool
 isByte i = (i <= + 127) Bool.∧ (-[1+ 127 ] <= i)
@@ -187,6 +162,14 @@ condToJVM l (eqBool true ) = [ "ifne" <t> l ]
 condToJVM l (cmpZero op  ) = [ "if" <> cmpOpToJVM op <t> l ]
 condToJVM l (cmp     op  ) = cmpToJVM l _ op
 
+-- Print a comment about scope modification
+admToJVM : ∀{Γ Γ'} (adm : AdmScope Γ Γ') → List String
+admToJVM _ = []
+-- admToJVM newBlock         = [ c> "{" ]
+-- admToJVM popBlock         = [ c> "}" ]
+-- admToJVM (decl {t = t} x) = [] -- printTy t <+> x <> ";"
+
+
 record BBToJVM : Set where
   constructor _∙_∙_
   field
@@ -195,7 +178,7 @@ record BBToJVM : Set where
     code     : List String
 
 emit : (Ξ : MT) → List String → BBToJVM
-emit (Γ , Φ) ss = cxtMemSize (List⁺.toList Γ) ∙ blockMemSize Φ ∙ List.map ("\t" <>_) ss
+emit (Γ , Φ) ss = cxtMemSize (List⁺.toList Γ) ∙ blockMemSize Φ ∙ List.map t>_ ss
 
 mempty : BBToJVM
 mempty = 0 ∙ 0 ∙ []
@@ -218,9 +201,10 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
   jfToJVM : ∀ {Ξ Ξ'} → JF Σ Ξ Ξ' → List String
   jfToJVM (stackI j)          = List.fromMaybe $ stackIToJVM j
   jfToJVM (storeI j)          = [ storeIToJVM j ]
-  jfToJVM (scopeI adm)        = []
+  jfToJVM (scopeI adm)        = admToJVM adm
   jfToJVM (callI (call f))    = [ "invokestatic" <t> funToJVM f ]
   jfToJVM (callI (builtin b)) = [ "invokestatic" <t> "Runtime/" <> builtinToJVM _ b ]
+  jfToJVM (comment xs)         = "" ∷ List.map c>_ xs ++ [ "" ]
 
   module MethodToJVM (rt : Type) {Λ : Labels} (labelNames : AssocList String Λ) where
 
@@ -276,14 +260,14 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
 
   methodToJVM : ∀{ft} → String × Meth Σ ft → List String
   methodToJVM (name , meth) with methToJVM _ meth
-  ... | storeLimit ∙ stackLimit ∙ code = vsep $ prologue ∷ code ∷ epilogue ∷ []
+  ... | storeLimit ∙ stackLimit ∙ code = vcat $ prologue ∷ code ∷ epilogue ∷ []
     where
     prologue
       = ".method public static" <+> name
       ∷ ".limit locals" <+> printNat storeLimit
       ∷ ".limit stack"  <+> printNat stackLimit
       ∷ []
-    epilogue = ".end method" ∷ []
+    epilogue = "" ∷ ".end method" ∷ []
 
 FunNames : Sig → Set
 FunNames = AssocList String
@@ -307,9 +291,9 @@ programToJVM className funNames (program meths _) = vsep $ header ∷ init ∷ m
   init
     = ".method public <init>()V"
     ∷ ""
-    ∷ "  aload_0"
-    ∷ "  invokespecial java/lang/Object/<init>()V"
-    ∷ "  return"
+    ∷ t> "aload_0"
+    ∷ t> "invokespecial java/lang/Object/<init>()V"
+    ∷ t> "return"
     ∷ ""
     ∷ ".end method"
     ∷ []
@@ -317,9 +301,9 @@ programToJVM className funNames (program meths _) = vsep $ header ∷ init ∷ m
     = ".method public static main([Ljava/lang/String;)V"
     ∷ ".limit locals 1"
     ∷ ""
-    ∷ ("  invokestatic" <+> className <> "/main()I")
-    ∷ "  pop"
-    ∷ "  return"
+    ∷ t> ("invokestatic" <+> className <> "/main()I")
+    ∷ t> "pop"
+    ∷ t> "return"
     ∷ ""
     ∷ ".end method"
     ∷ []
