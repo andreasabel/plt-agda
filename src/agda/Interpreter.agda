@@ -79,14 +79,14 @@ comparison {bool}   nEq  b b' = b xor b'
 -- Manipulating the environment.
 
 lookupFun : ∀{Σ ft} (f : Fun Σ ft) (prg : Prg Σ Σ) → Def Σ ft
-lookupFun f prg = List.All.lookup prg f
+lookupFun (fun x f) prg = List.All.lookup prg f
 
 lookupVar : ∀{Γ t} (x : Var Γ t) (γ : Env Γ) → Entry` t
-lookupVar (var Δ∈Γ t∈Δ) γ = lookup (lookup γ Δ∈Γ) t∈Δ
+lookupVar (var x Δ∈Γ t∈Δ) γ = lookup (lookup γ Δ∈Γ) t∈Δ
   where open List.All
 
 updateVar : ∀{Γ t} (x : Var Γ t) (v : Val` t) (γ : Env Γ) → Env Γ
-updateVar (var Δ∈Γ t∈Δ) v = updateAt Δ∈Γ (updateAt t∈Δ (λ _ → just v))
+updateVar (var x Δ∈Γ t∈Δ) v = updateAt Δ∈Γ (updateAt t∈Δ (λ _ → just v))
   where open List.All
 
 
@@ -330,9 +330,9 @@ module Interpret {Σ : Sig} (prg : Program Σ) where
       evalStm (sReturn e) = throwError =<< evalExp e
       evalStm (sExp e)    = _ <$> evalExp e
 
-      evalStm (sInit nothing) = return nothing
+      evalStm (sInit x nothing) = return nothing
 
-      evalStm (sInit (just e)) = just <$> evalExp e
+      evalStm (sInit x (just e)) = just <$> evalExp e
 
       evalStm (sBlock ss) = do
         modify ([] ∷_)         -- push empty frame

@@ -78,9 +78,9 @@ data StoreI (Γ : Cxt) : (Φ Φ' : ST) → Set where
 -- * Create and destroy local variables
 
 data AdmScope : (Γ Γ' : Cxt) → Set where
-  newBlock : ∀{Γ}   → AdmScope Γ        ([] ∷⁺ Γ)
-  popBlock : ∀{Γ Δ} → AdmScope (Δ ∷⁺ Γ) Γ
-  decl     : ∀{Γ t} → AdmScope Γ        (Γ ▷ ` t)
+  newBlock : ∀{Γ}              → AdmScope Γ        ([] ∷⁺ Γ)
+  popBlock : ∀{Γ Δ}            → AdmScope (Δ ∷⁺ Γ) Γ
+  decl     : ∀{Γ t} (x : Name) → AdmScope Γ        (Γ ▷ ` t)
 
 -- Conditions for jumps
 
@@ -137,7 +137,7 @@ module _ (Σ : Sig) where
     pattern fcPopBlock fc = fcAdm popBlock fc
 
     -- fcDecl     : ∀{Γ t} (fc : FC Λ (Γ ▷ just t)) → FC Λ Γ
-    pattern fcDecl fc = fcAdm decl fc
+    pattern fcDecl x fc = fcAdm (decl x) fc
 
     pattern fcStackI j fc = fcExec (stackI j) fc
     pattern fcConst  v fc = fcStackI (const v) fc

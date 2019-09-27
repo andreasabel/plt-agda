@@ -11,6 +11,10 @@ module WellTypedSyntax where
 open import Library
 open import Value public
 
+-- Names as coming from the abstract syntax are just strings.
+
+Name = String
+
 -- Typing contexts are lists of blocks.
 -- There is at least one block, which can be empty.
 -- A block is a list of types.
@@ -26,6 +30,7 @@ record Var⁻ (Γ : Cxt⁻) (t : Ty) :  Set where
   no-eta-equality
   constructor var
   field
+    varName : Name
     {Δ} : Block
     Δ∈Γ : Δ ∈ Γ
     t∈Δ : t ∈ Δ
@@ -47,8 +52,8 @@ _▷_ : Cxt → Type → Cxt
 _▷ᵈ_ : Cxt → Block → Cxt
 (Δ ∷ Γ) ▷ᵈ Δ'  = (Δ' ++ Δ) ∷ Γ
 
-vzero : ∀{Γ Δ t} → Var ((t ∷ Δ) ∷ Γ) t
-vzero = var (here refl) (here refl)
+vzero : ∀{Γ Δ t} (x : Name) → Var ((t ∷ Δ) ∷ Γ) t
+vzero x = var x here! here!
 
 -- Rank-1 function types
 
@@ -67,8 +72,12 @@ Sig = List FunType
 
 -- A function is an index into the signature.
 
-Fun : (Σ : Sig) (ft : FunType) → Set
-Fun Σ ft = ft ∈ Σ
+record Fun (Σ : Sig) (ft : FunType) : Set where
+  constructor fun
+  field
+    funName : Name
+    funIx   : ft ∈ Σ
+open Fun public
 
 -- Builtin functions
 
@@ -149,7 +158,7 @@ module _ (Σ : Sig) (returnType : Type) where
     data Stm (Γ : Cxt) : Type → Set where
       sReturn : (e : Exp Σ Γ returnType)                   → Stm Γ void   -- return e;
       sExp    : ∀{t} (e : Exp Σ Γ t)                       → Stm Γ void   -- e;
-      sInit   : ∀{t} (e : Maybe (Exp` Σ Γ t))              → Stm Γ (` t)  -- t x = e;  OR:  t x;
+      sInit   : ∀{t} (x : Name) (e : Maybe (Exp` Σ Γ t))   → Stm Γ (` t)  -- t x = e;  OR:  t x;
       -- sDecls has been desugared into sInits.
       sBlock  : ∀{Δ} (ss : Stms (List⁺.toList Γ) [] Δ)     → Stm Γ void   -- { ss }
       -- The bodies of sWhile and sIfElse do not permit scope extensions here.

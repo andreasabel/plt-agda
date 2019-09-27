@@ -237,8 +237,8 @@ module _ (Σ : Sig) (rt : Type) where
 
     compileStm (sReturn e)       _ = compileExp e $ crBB λ ρ → bbReturn
     compileStm (sExp e)            = compileExp e ∘ crExec (stackI pop)
-    compileStm (sInit nothing)     = crExec (scopeI decl)
-    compileStm (sInit (just e))    = compileExp e ∘ crExec (scopeI decl) ∘ crExec (storeI (store vzero))
+    compileStm (sInit x nothing)   = crExec (scopeI (decl x))
+    compileStm (sInit x (just e))  = compileExp e ∘ crExec (scopeI (decl x)) ∘ crExec (storeI (store (vzero x)))
     compileStm (sBlock ss)         = crExec (scopeI newBlock) ∘ compileStms ss ∘ crExec (scopeI popBlock)
     compileStm (sWhile e s)      k = fix $ compileCond e (compileStm s $ crGoto here!) (crWeak wk1 k)
     compileStm (sIfElse e s₁ s₂) k = joinPoint k λ ρ k' → compileCond e (compileStm s₁ k') (compileStm s₂ k')
@@ -318,8 +318,8 @@ module _ (Σ : Sig) (rt : Type) where
     compileExp (eVar x)              = crExec (storeI (load x))
     compileExp (eAss x e)            = compileExp e ∘ crExec (storeI (store x)) ∘ crExec (storeI (load x))
 
-    compileExp (eApp f es)           = compileExps es ∘ crExec (callI (call f))
-    compileExp (eBuiltin f es)       = compileExps es ∘ crExec (callI (builtin f))
+    compileExp (eApp (fun x f) es)   = compileExps es ∘ crExec (callI (call f))
+    compileExp (eBuiltin f     es)   = compileExps es ∘ crExec (callI (builtin f))
 
     compileExp (eOp (arith op) e e') = compileExp e ∘ compileExp e' ∘ crExec (stackI (arith op))
     compileExp (eOp (cmp   op) e e') = compileBoolOp (cmp op) e e'

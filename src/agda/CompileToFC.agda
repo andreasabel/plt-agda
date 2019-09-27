@@ -64,8 +64,8 @@ module _ (Σ : Sig) (rt : Type) where
     compileExp (eOp (cmp   op) e e') k = compileBoolOp (cmp   op) e e' k
     compileExp (eOp (logic op) e e') k = compileBoolOp (logic op) e e' k
 
-    compileExp (eApp     f es) k = compileExps es $ fcCall    f ∘ k
-    compileExp (eBuiltin f es) k = compileExps es $ fcBuiltin f ∘ k
+    compileExp (eApp (fun x f) es) k = compileExps es $ fcCall    f ∘ k
+    compileExp (eBuiltin f     es) k = compileExps es $ fcBuiltin f ∘ k
 
     -- Compiling expression list.
     -- First value ends up first on the stack.
@@ -158,9 +158,9 @@ module _ (Σ : Sig) (rt : Type) where
     compileStm (sReturn e)      k = compileExp e λ ρ → fcReturn
     compileStm (sExp e)         k = compileExp e $ fcPop ∘ k
 
-    compileStm (sInit nothing)  k = fcDecl (k !)
-    compileStm (sInit (just e)) k = compileExp e $
-      fcDecl ∘ fcAssign vzero ∘ k
+    compileStm (sInit x nothing)  k = fcDecl x (k !)
+    compileStm (sInit x (just e)) k = compileExp e $
+      fcDecl x ∘ fcAssign (vzero x) ∘ k
 
     compileStm (sBlock ss) k =
       fcNewBlock $ compileStms ss λ ρ →

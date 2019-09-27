@@ -40,7 +40,7 @@ _∙_≡_ : ∀{Γ} (γ : Env Γ) {t} (v : Entry` t) (γ' : Env (Γ ▷ ` t)) �
 --     → UpdateEnv v (here refl) (δ ∷ γ) (δ′ ∷ γ)
 
 _⊢_≔_⇓_ : ∀ {Γ} (γ : Env Γ) {t} (x : Var Γ t) (v : Val` t) (γ′ : Env Γ) → Set
-γ ⊢ var Δ∈Γ t∈Δ ≔ v ⇓ γ′ = -- UpdateEnv v x γ γ′
+γ ⊢ var x Δ∈Γ t∈Δ ≔ v ⇓ γ′ = -- UpdateEnv v x γ γ′
   List.All.UpdateAt (List.All.UpdateAt (λ _ → just v ≡_) t∈Δ) Δ∈Γ γ γ′
 
 -- Evaluation of built-ins (non-deterministic).
@@ -80,12 +80,12 @@ mutual
       → γ ⊢ x ⇓ˣ v
       → P , γ ⊢ eVar x ⇓ᵉ v , γ
 
-    evApp : ∀ {Δ Δ' t} (let ft = funType Δ t) {f : Fun Σ ft} {ss : Stms Σ t [] Δ Δ'}
+    evApp : ∀ {Δ Δ' t} (let ft = funType Δ t) {x : Name} {f : ft ∈ Σ} {ss : Stms Σ t [] Δ Δ'}
       → f ↦ (Δ' , ss) ∈ P                     → ∀ {es : Exps Σ Γ Δ} {vs : Vals Δ} {γ′ : Env Γ}
       → P , γ ⊢ es ⇓ᵉˢ vs , γ′                → ∀ {δ′ : Frame Δ'} {r : Res t} (let δ = List.All.map just vs)
       → P , (δ ∷ []) ⊢ ss ⇓ˢˢ r , (δ′ ∷ [])   → ∀ {v : Val t}
       → r ≡return v
-      → P , γ ⊢ eApp f es ⇓ᵉ v , γ′
+      → P , γ ⊢ eApp (fun x f) es ⇓ᵉ v , γ′
 
     evBuiltin : ∀ {Δ} {es : Exps Σ Γ Δ} {vs : Vals Δ} {γ′ : Env Γ}
       → P , γ ⊢ es ⇓ᵉˢ vs , γ′       → ∀ {t} {b : Builtin (funType Δ t)} {v : Val t}
@@ -131,12 +131,12 @@ mutual
       → P , γ ⊢ e ⇓ᵉ v , γ′
       → P , γ ⊢ sExp e ⇓ˢ cont , γ′
 
-    evDecl :  ∀{t}
-      → P , γ ⊢ sInit {t = t} nothing ⇓ˢ cont , push nothing γ
+    evDecl :  ∀{t x}
+      → P , γ ⊢ sInit {t = t} x nothing ⇓ˢ cont , push nothing γ
 
-    evInit :  ∀{t} {e : Exp` Σ Γ t} {v : Val` t} {γ′ : Env Γ}
+    evInit :  ∀{t x} {e : Exp` Σ Γ t} {v : Val` t} {γ′ : Env Γ}
       → P , γ ⊢ e ⇓ᵉ v , γ′
-      → P , γ ⊢ sInit (just e) ⇓ˢ cont , push (just v) γ′
+      → P , γ ⊢ sInit x (just e) ⇓ˢ cont , push (just v) γ′
 
     -- evInit :  ∀{e : Exp Σ Γ t} {v : Val t} {γ′ : Env Γ}
     --   → P , γ ⊢ e ⇓ᵉ v , γ′   → ∀ {γ″ : Env (Γ ▷ just t)}
@@ -205,6 +205,6 @@ record _⊢_⇓ᵖ_ {Σ} (P : Prg Σ Σ) {t} (main : funType [] t ∈ Σ) (v : V
 -- Run the program
 
 _⇓ᵖ_ : ∀{Σ} (P : Program Σ) (v : Val` int) → Set
-program P main ⇓ᵖ v = P ⊢ main ⇓ᵖ v
+program P (fun _ main) ⇓ᵖ v = P ⊢ main ⇓ᵖ v
 
 -- -}

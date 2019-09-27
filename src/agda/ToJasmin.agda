@@ -114,7 +114,7 @@ blockAddr : ∀ {Γ} {Δ : Block} → Δ ∈ List⁺.toList Γ → ℕ
 blockAddr = cxtMemSize ∘ remainingCxt
 
 varToAddr : ∀{Γ t} → Var Γ t → ℕ
-varToAddr (var Δ∈Γ t∈Δ) = blockAddr Δ∈Γ + offsetAddr t∈Δ
+varToAddr (var x Δ∈Γ t∈Δ) = blockAddr Δ∈Γ + offsetAddr t∈Δ
 
 accessToJVM : String → ℕ → String
 accessToJVM s 0 = s <u> "0"

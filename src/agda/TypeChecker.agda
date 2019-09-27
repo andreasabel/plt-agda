@@ -62,8 +62,6 @@ printError = λ where
 
 -- Names as coming from the abstract syntax are just strings.
 
-Name = String
-
 idToName : A.Id → Name
 idToName (A.id x) = x
 
@@ -121,7 +119,7 @@ record TCSig (Σ : Sig) : Set where
   field
     theSig         : NameDecorated {FunType} Σ
     noClashBuiltin :
-      ∀ {x : Name} {ft : FunType} {f : Fun Σ ft} {b : ∃ Builtin} {b∈ : b ∈ builtins}
+      ∀ {x} {ft : FunType} {f : ft ∈ Σ} {b : ∃ Builtin} {b∈ : b ∈ builtins}
       (p : f ↦ x ∈ scope theSig) (q : b∈ ↦ x ∈ scope builtinSig) → ⊥
 open TCSig
 
@@ -154,20 +152,21 @@ TCCxt = List⁺.All TCBlock
 -- y ↦ x ∈Γ γ  states that index y points to identifier x in type checking context γ.
 
 _↦_∈Γ_ : ∀{t Γ} (y : Var⁻ Γ t) (x : Name) (γ : TCCxt⁻ Γ) → Set
-(var Δ∈Γ t∈Δ) ↦ x ∈Γ γ = ∃ λ δ → (Δ∈Γ ↦ δ ∈ γ) × (t∈Δ ↦ x ∈ scope δ)
+(var x′ Δ∈Γ t∈Δ) ↦ x ∈Γ γ = (x′ ≡ x) × ∃ λ δ → (Δ∈Γ ↦ δ ∈ γ) × (t∈Δ ↦ x ∈ scope δ)
 
 -- x ∈?Γ γ  tests whether identifier x is bound in type checking environment γ.
 
 _∈?Γ_ : ∀{Γ} (x : Name) (γ : TCCxt⁻ Γ) → Dec (∃₂ λ t (y : Var⁻ Γ t) → y ↦ x ∈Γ γ)
-x ∈?Γ []      = no λ{(_ , var () _ , _)}
+x ∈?Γ []      = no λ{(_ , var _ () _ , _)}
 x ∈?Γ (δ ∷ γ) =
   case ?↦ x ∈ scope δ of λ where
-    (yes (t , t∈Δ , p)) → yes (t , var (here refl) t∈Δ , δ , here , p)
+    (yes (t , t∈Δ , p)) → yes (t , var x here! t∈Δ , refl , δ , here , p)
     (no ¬p)             → case x ∈?Γ γ of λ where
-      (yes (t , var Δ∈Γ t∈Δ , δ' , z , v)) → yes (t , var (there Δ∈Γ) t∈Δ , δ' , there z , v)
-      (no ¬q)                              → no  λ where
-        (t , var (here refl) t∈Δ , δ  , here    , p) → ¬p (t , t∈Δ , p)
-        (t , var (there Δ∈Γ) t∈Δ , δ' , there z , v) → ¬q (t , var Δ∈Γ t∈Δ , δ' , z , v )
+      (yes (t , var x Δ∈Γ t∈Δ , refl , δ' , z , v)) → yes (t , var x (there Δ∈Γ) t∈Δ , refl , δ' , there z , v)
+      (no ¬q)                                 → no  λ where
+        (t , var x here!       t∈Δ , refl , δ' , here    , p) → ¬p (t , t∈Δ , p)
+        (t , var x (there Δ∈Γ) t∈Δ , refl , δ' , there z , v) → ¬q (t , var x Δ∈Γ t∈Δ , refl , δ' , z , v)
+
 
 -- Type checking environment contains global signature and local context.
 
@@ -225,7 +224,7 @@ module CheckExpressions {Σ : Sig} {Γ : Cxt} (ξ : TCEnv Σ Γ) where
             -- Finally, look in the function signature.
             let σ = theSig (tcSig ξ)
             case ?↦ x ∈ scope σ of λ where
-              (yes (ft , f , _)) → return (ft , inj₂ f)
+              (yes (ft , f , _)) → return (ft , inj₂ (fun x f))
               (no _)             → throwError unboundFunction
       err → throwError err
 
@@ -521,8 +520,9 @@ module CheckStatements {Σ : Sig} {rt : Type} where
     ... | void = throwError voidDeclaration
     ... | ` t' = do
       e' ← lift $ checkExp` e t'
-      addVar (idToName x) t'
-      return (sInit (just e') ∷ [])
+      let x' = idToName x
+      addVar x' t'
+      return (sInit x' (just e') ∷ [])
 
     checkStm (A.sDecls t xs)  with type t
     ... | void = throwError voidDeclaration
@@ -556,8 +556,9 @@ module CheckStatements {Σ : Sig} {rt : Type} where
        (t : Ty) (xs : List A.Id) → CheckStm Γ Δ (List.foldl (λ Δ _ → t ∷ Δ) Δ xs)
     checkDecls t []       = return []
     checkDecls t (x ∷ xs) = do
-      addVar (idToName x) t
-      (sInit nothing ∷_) <$> checkDecls t xs
+      let x' = idToName x
+      addVar x' t
+      (sInit x' nothing ∷_) <$> checkDecls t xs
 
 -- Checking the program.
 ---------------------------------------------------------------------------
@@ -680,7 +681,7 @@ module CheckProgram where
   checkMain : ∀{Σ} (σ : TCSig Σ) → Error (Fun Σ mainType)
   checkMain σ = do
     case ?↦ "main" ∈ scope (theSig σ) of λ where
-      (yes (mainType , f , _)) → return f
+      (yes (mainType , f , _)) → return (fun "main" f)
       (yes (funType [] _ , _)) → throwError mainNoReturnInt
       (yes _)                  → throwError mainHasParameters
       (no  _)                  → throwError noMain
