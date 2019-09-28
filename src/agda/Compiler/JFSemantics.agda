@@ -92,12 +92,23 @@ module _ {Σ : Sig} where
 
   --
 
-  data CallIEval : ∀ {Ξ Ξ'} (j : CallI Σ Ξ Ξ') (ξ : MS Ξ) (ξ' : MS Ξ') → Set where
+  data CallIEval : ∀ {Φ Φ'} (j : CallI Σ Φ Φ') (φ : Frame Φ) (φ' : Frame Φ') → Set where
+
+    -- evCall :
+    --   → CallIEval (call f)
+
+    -- evBuiltin :
+    --   → δ ⊢ b ⇓ᵇ v
+    --   → CallIEval (builtin b) (δ ++⁺ φ) (φ ▷ᵛ v)
 
   -- Small step operational semantics of jump-free instructions.
   -- A jf instruction relates two machine states (before and after the instruction).
 
   data JFEval : ∀ {Ξ Ξ'} (j : JF Σ Ξ Ξ') (ξ : MS Ξ) (ξ' : MS Ξ') → Set where
+
+    evCallI : ∀{Γ Φ Φ'} {j : CallI Σ Φ Φ'} {γ : Env Γ} {φ : Frame Φ} {φ' : Frame Φ'}
+      → CallIEval j φ φ'
+      → JFEval (callI j) (γ , φ) (γ , φ')
 
     evStackI : ∀{Γ Φ Φ'} {j : StackI Φ Φ'} {γ : Env Γ} {φ : Frame Φ} {φ' : Frame Φ'}
       → StackIEval j φ φ'
@@ -110,10 +121,6 @@ module _ {Σ : Sig} where
     evScopeI : ∀{Γ Γ′ Φ} {adm : AdmScope Γ Γ′} {γ : Env Γ} {γ′ : Env Γ′} {φ : Frame Φ}
       → ScopeIEval adm γ γ′
       → JFEval (scopeI adm) (γ , φ) (γ′ , φ)
-
-    evCallI : ∀ {Ξ Ξ'} {j : CallI Σ Ξ Ξ'} {ξ : MS Ξ} {ξ' : MS Ξ'}
-      → CallIEval j ξ ξ'
-      → JFEval (callI j) ξ ξ'
 
     evComment : ∀{Ξ} {ξ : MS Ξ} {rem}
       → JFEval (comment rem) ξ ξ

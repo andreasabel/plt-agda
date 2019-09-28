@@ -51,17 +51,17 @@ module _ (Σ : Sig) where
 
   -- Function calls
 
-  data CallI : (Ξ Ξ' : MT) → Set where
-    call    : ∀{Γ Φ Δ rt} (f : funType Δ rt ∈ Σ)       → CallI (Γ , Δ ++ Φ) (Γ , Φ ▷ᵇ rt)
-    builtin : ∀{Γ Φ Δ rt} (b : Builtin (funType Δ rt)) → CallI (Γ , Δ ++ Φ) (Γ , Φ ▷ᵇ rt)
+  data CallI : (Φ Φ' : ST) → Set where
+    call    : ∀{Φ Δ rt} (f : (funType Δ rt) ∈ Σ)     → CallI (Δ ++ Φ) (Φ ▷ᵇ rt)
+    builtin : ∀{Φ Δ rt} (b : Builtin (funType Δ rt)) → CallI (Δ ++ Φ) (Φ ▷ᵇ rt)
 
   -- Single jump-free instruction
 
   data JF : (Ξ Ξ' : MT) → Set where
+    callI   : ∀{Γ Φ Φ'} (j   : CallI    Φ Φ') → JF (Γ , Φ) (Γ , Φ')
     stackI  : ∀{Γ Φ Φ'} (j   : StackI   Φ Φ') → JF (Γ , Φ) (Γ , Φ')
     storeI  : ∀{Γ Φ Φ'} (j   : StoreI Γ Φ Φ') → JF (Γ , Φ) (Γ , Φ')
     scopeI  : ∀{Γ Γ' Φ} (adm : AdmScope Γ Γ') → JF (Γ , Φ) (Γ' , Φ)
-    callI   : ∀{Ξ Ξ'}   (j   : CallI Ξ Ξ')    → JF Ξ Ξ'
     comment : ∀{Ξ}      (rem : List String)   → JF Ξ Ξ
 
 

@@ -34,3 +34,7 @@ Entry (` t) = Entry` t
 push : ∀{t} (v : Entry t) {Γ} (γ : Env Γ) → Env (Γ ▷ t)
 push {void} _ γ       = γ
 push {` t}  v (δ ∷ γ) = (v ∷ δ) ∷ γ
+
+_▷ᵛ_ : ∀{Γ t} (γ : Env Γ) (v : Val t) → Env (Γ ▷ t)
+_▷ᵛ_ {t = ` t } γ v = push (just v) γ
+_▷ᵛ_ {t = void} γ v = γ
