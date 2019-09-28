@@ -21,8 +21,9 @@ data StackI : (Φ Φ' : ST) → Set where
 
 -- Store-manipulating instructions
 
-data IncDec : Set where
-  inc dec : IncDec
+IncDec = IncrDecr int
+pattern inc = incr int
+pattern dec = decr int
 
 data StoreI (Γ : Cxt) : (Φ Φ' : ST) → Set where
   store  : ∀{Φ t} (x : Var Γ t) → StoreI Γ (t ∷ Φ) Φ

@@ -130,8 +130,10 @@ module _ (Σ : Sig) (rt : Type) where
     ∙ goto (λ ρ → ⊆-lookup ρ here!)
 
   -- NB: CPS form of joinPoint forces sharing of computation (crToGoto cr)
-  joinPoint : ∀ {Ξ Λ} → {-@01-} CompRes Ξ Λ → ∀{P} → (∀{Λ′} (ρ : Λ ⊆ Λ′) → @ω CompRes Ξ Λ′ → WithBBs P Λ′) → WithBBs P Λ
-  -- joinPoint cr k = k ⊆-refl (crToGoto cr)
+  joinPoint : ∀ {Ξ Λ}
+    → {-@01-} CompRes Ξ Λ → ∀{P}
+    → (∀{Λ′} (ρ : Λ ⊆ Λ′) → @ω CompRes Ξ Λ′ → WithBBs P Λ′)
+    → WithBBs P Λ
   joinPoint cr k = let
        (η₁ ∙ bbs₁ ∙ l)  = crToGoto' cr
        (η₂ ∙ bbs₂ ∙ bb) = k η₁ (_ ∙ (λ _ → AllExt-id) ∙ goto l)
@@ -202,7 +204,7 @@ module _ (Σ : Sig) (rt : Type) where
     compileStm s@(sInit x (just e))  = commentStm s ∘ compileExp e ∘ crExec (scopeI (decl x)) ∘ crExec (storeI (store (vzero x)))
     compileStm s@(sBlock ss)         = crExec (scopeI newBlock) ∘ compileStms ss ∘ crExec (scopeI popBlock)
     compileStm s@(sWhile e s₀)     k = crComment ("while" <+> parens (printExp e)) $
-                                       fix $ compileCond e (compileStm s₀ $ crGoto here!) (crWeak wk1 k)
+                                       fix $ compileCond e (compileStm s₀ $ crGoto here!) (crWeak ⊆-wk1 k)
     compileStm s@(sIfElse e s₁ s₂) k = crComment ("if" <+> parens (printExp e)) $
                                        joinPoint k λ ρ k' → compileCond e (compileStm s₁ k') (compileStm s₂ k')
 

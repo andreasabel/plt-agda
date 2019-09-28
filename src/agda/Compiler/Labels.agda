@@ -37,8 +37,3 @@ F →̇ G = λ Λ → F Λ → G Λ
 -- Cojoin (duplicate):
 _∙_ : ∀{F Λ} (k : □ F Λ) → □ (□ F) Λ
 k ∙ ρ = λ ρ' → k (⊆-trans ρ ρ')
-
--- Adding one more label
-
-wk1 : ∀{Ξ} {Λ : Labels} → Λ ⊆ Ξ ∷ Λ
-wk1 {Ξ} = ⊆-skip Ξ ⊆-refl

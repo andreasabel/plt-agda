@@ -18,7 +18,7 @@ module _ (Σ : Sig) (rt : Type) where
   _newLabel :  ∀{Λ Ξ Ξ'}
     → (f : □ (□ (FC' Ξ') →̇ FC' Ξ) Λ)
     → FC' Ξ (Ξ' ∷ Λ)
-  _newLabel f = f wk1 λ ρ → fcGoto (weakLabel ρ (here refl))
+  _newLabel f = f ⊆-wk1 λ ρ → fcGoto (weakLabel ρ (here refl))
 
   -- Provide a duplicable version of a continuation,
   -- introducing a new label if necessary.

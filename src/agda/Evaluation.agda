@@ -65,7 +65,28 @@ data _≡_±1_ : ∀{t} (v v' : Val` t) (k : IncrDecr t) → Set where
 
 postulate
   _⟨_⟩_⇓ᵃ_ : ∀{t} (v : Val` t) (op : ArithOp t) (v' : Val` t) (w : Val` t) → Set
+  _⟨_⟩_⇓ᶜ_ : ∀{t} (v : Val` t) (op : CmpOp t) (v' : Val` t) (b : Bool) → Set
   _⟨_⟩_⇓ᵒ_ : ∀{t t'} (v : Val` t) (op : Op t t') (v' : Val` t) (w : Val` t') → Set
+
+
+--  γ ⊢ x ⇓ v ±=1 k ⇓ v′ , γ′
+
+record _⊢_⇓_±=1_⇓_,_ {Γ t}
+  (γ : Env Γ) (x : Var Γ t) (v : Val` t) (k : IncrDecr t) (v′ : Val` t) (γ′ : Env Γ) : Set where
+  constructor evIncrDecr
+  field
+    loadVal  : γ ⊢ x ⇓ˣ v
+    incDec   : v′ ≡ v ±1 k
+    storeVal : γ ⊢ x ≔ v′ ⇓ γ′
+
+--  γ ⊢ x ±=1 k ⇓ γ′
+
+record _⊢_±=1_⇓_ {Γ t} (γ : Env Γ) (x : Var Γ t) (k : IncrDecr t) (γ′ : Env Γ) : Set where
+  constructor packIncrDecr
+  field
+    {v}      : Val` t
+    {v′}     : Val` t
+    incrDecr : γ ⊢ x ⇓ v ±=1 k ⇓ v′ , γ′
 
 -- Evaluation of expressions (non-deterministic partial big-step semantics).
 
@@ -92,10 +113,8 @@ mutual
       → vs ⊢ b ⇓ᵇ v
       → P , γ ⊢ eBuiltin b es ⇓ᵉ v , γ′
 
-    evIncrDecr : ∀{t} {x : Var Γ t} {v : Val` t}
-      → γ ⊢ x ⇓ˣ v                     → ∀ {k : IncrDecr t} {v′}
-      → v′ ≡ v ±1 k                    → ∀ {γ′}
-      → γ ⊢ x ≔ v′ ⇓ γ′                → ∀ {p : PrePost} {v″}
+    evIncrDecr : ∀{t} {p : PrePost} {k : IncrDecr t} {x : Var Γ t} {v v′ v″ : Val` t} {γ′}
+      → γ ⊢ x ⇓ v ±=1 k ⇓ v′ , γ′
       → v″ ≡ ifPost p then v else v′
       → P , γ ⊢ eIncrDecr p k x ⇓ᵉ v″ , γ′
 
