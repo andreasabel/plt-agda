@@ -23,5 +23,6 @@ import Compiler.FC.CompileToFC
 import Compiler.FC.FCSemantics
 
 import Compiler.BasicBlocks
+import Compiler.BB.FCToBB
 import Compiler.BB.BBSemantics
 import Compiler.BB.ToJasmin
