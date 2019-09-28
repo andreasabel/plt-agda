@@ -1,4 +1,4 @@
-module BasicBlocks where
+module Compiler.BasicBlocks where
 
 open import Library
 open import Library.AllExt
@@ -7,9 +7,9 @@ open import Value
 open import WellTypedSyntax
 open import InternalToAbstract
 
-open import Compiler.JumpFreeInstructions
-open import Compiler.Labels
-open import FlowChart
+open import Compiler.JumpFreeInstructions public
+open import Compiler.Labels               public
+open import Compiler.FlowChart
 
 module _ (Σ : Sig) (rt : Type) where
 

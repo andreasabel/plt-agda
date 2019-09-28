@@ -3,8 +3,9 @@ module Everything where
 import Library
 import Library.AllExt
 
-import AST
-import Parser
+import CPP.AST
+import CPP.Parser
+
 import WellTypedSyntax
 import TypeChecker
 
@@ -14,5 +15,13 @@ import Evaluation
 import IOTree
 import Interpreter
 
-import FlowChart
-import FCSemantics
+import Compiler.JumpFreeInstructions
+import Compiler.Labels
+
+import Compiler.FlowChart
+import Compiler.FC.CompileToFC
+import Compiler.FC.FCSemantics
+
+import Compiler.BasicBlocks
+import Compiler.BB.BBSemantics
+import Compiler.BB.ToJasmin

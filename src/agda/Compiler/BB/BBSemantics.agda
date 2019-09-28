@@ -1,15 +1,16 @@
 {-# OPTIONS --allow-unsolved-metas #-}
 
+module Compiler.BB.BBSemantics where
+
 open import Library renaming (⊆-lookup to weakLabel) -- ; ⊆-refl to !)
 open import WellTypedSyntax
 open import Value
 open import Environment
-open import FlowChart
-open import BasicBlocks
 open import Evaluation
-open import FCSemantics using (MS; ReturnVal; JFEval)
 
-module BBSemantics where
+open import Compiler.FlowChart
+open import Compiler.BasicBlocks
+open import Compiler.FC.FCSemantics using (MS; ReturnVal; JFEval)
 
 module _ (Σ : Sig) (rt : Type) where
 

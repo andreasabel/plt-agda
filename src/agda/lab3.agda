@@ -5,14 +5,14 @@ open import Library
 open import CPP.AST     using (Program; printProgram)
 open import CPP.Parser  using (Err; ok; bad; parseProgram)
 open import TypeChecker using (printError; module CheckProgram)
-open import BasicBlocks using (compileProgram)
-open import ToJasmin    using (programToJVM)
+open import Compiler.BasicBlocks using (compileProgram)
+open import Compiler.BB.ToJasmin using (programToJVM)
 
 -- Other modules, not used here
 import Environment
 import Evaluation
 import Interpreter
-import CompileToFC
+import Compiler.FC.CompileToFC
 
 check : String → String → String → IO ⊤
 check dir name contents = do

@@ -1,13 +1,13 @@
 -- Expressing control constructs in terms of labels and jumps.
 
-module FlowChart where
+module Compiler.FlowChart where
 
 open import Library renaming (⊆-lookup to weakLabel; ⊆-refl to !)
 open import WellTypedSyntax
 open import Value
 
-open import Compiler.JumpFreeInstructions
-open import Compiler.Labels
+open import Compiler.JumpFreeInstructions public
+open import Compiler.Labels               public
 
 -- As a first step, we use let and fix to deal with labels.
 -- Flow charts are like statement lists.

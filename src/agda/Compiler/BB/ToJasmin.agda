@@ -1,4 +1,4 @@
-module ToJasmin where
+module Compiler.BB.ToJasmin where
 
 open import Library
 open import Library.AllExt
@@ -9,7 +9,7 @@ open import InternalToAbstract
 
 open import Compiler.JumpFreeInstructions
 open import Compiler.Labels
-open import BasicBlocks
+open import Compiler.BasicBlocks
 
 isByte : ℤ → Bool
 isByte i = (i <= + 127) Bool.∧ (-[1+ 127 ] <= i)

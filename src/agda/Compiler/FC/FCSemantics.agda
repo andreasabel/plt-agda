@@ -1,13 +1,14 @@
 {-# OPTIONS --allow-unsolved-metas #-}
 
+module Compiler.FC.FCSemantics where
+
 open import Library renaming (⊆-lookup to weakLabel) -- ; ⊆-refl to !)
 open import WellTypedSyntax
 open import Value
 open import Environment
-open import FlowChart
 open import Evaluation
 
-module FCSemantics where
+open import Compiler.FlowChart
 
 -- Machine state
 
