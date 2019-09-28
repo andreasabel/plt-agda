@@ -6,7 +6,9 @@ open import Library.AllExt
 open import Value
 open import WellTypedSyntax
 open import InternalToAbstract
-open import FlowChart
+
+open import Compiler.JumpFreeInstructions
+open import Compiler.Labels
 open import BasicBlocks
 
 isByte : ℤ → Bool

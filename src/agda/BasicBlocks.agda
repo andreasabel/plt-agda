@@ -6,6 +6,9 @@ open import Library.AllExt
 open import Value
 open import WellTypedSyntax
 open import InternalToAbstract
+
+open import Compiler.JumpFreeInstructions
+open import Compiler.Labels
 open import FlowChart
 
 module _ (Σ : Sig) (rt : Type) where

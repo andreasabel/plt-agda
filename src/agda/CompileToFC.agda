@@ -3,6 +3,9 @@ module CompileToFC where
 open import Library renaming (⊆-lookup to weakLabel; ⊆-refl to !)
 open import WellTypedSyntax
 open import Value
+
+open import Compiler.JumpFreeInstructions
+open import Compiler.Labels
 open import FlowChart
 
 module _ (Σ : Sig) (rt : Type) where
