@@ -2,7 +2,7 @@
 module Environment where
 
 open import Library
-open import Value
+open import Value public
 open import WellTypedSyntax
 
 -- Results of evaluating a statement
@@ -24,6 +24,10 @@ Entry` t = Maybe (Val` t)
 Frame : Block → Set
 Frame = List.All Entry`
 
+_▷ᵛ_ : ∀{Δ t} (γ : Frame Δ) (v : Val t) → Frame (Δ ▷ᵇ t)
+_▷ᵛ_ {t = ` t } γ v = just v ∷ γ
+_▷ᵛ_ {t = void} γ v = γ
+
 Env : Cxt → Set
 Env = List⁺.All Frame
 
@@ -35,6 +39,6 @@ push : ∀{t} (v : Entry t) {Γ} (γ : Env Γ) → Env (Γ ▷ t)
 push {void} _ γ       = γ
 push {` t}  v (δ ∷ γ) = (v ∷ δ) ∷ γ
 
-_▷ᵛ_ : ∀{Γ t} (γ : Env Γ) (v : Val t) → Env (Γ ▷ t)
-_▷ᵛ_ {t = ` t } γ v = push (just v) γ
-_▷ᵛ_ {t = void} γ v = γ
+-- _▷ᵛ_ : ∀{Γ t} (γ : Env Γ) (v : Val t) → Env (Γ ▷ t)
+-- _▷ᵛ_ {t = ` t } γ v = push (just v) γ
+-- _▷ᵛ_ {t = void} γ v = γ

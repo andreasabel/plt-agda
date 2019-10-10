@@ -2,8 +2,7 @@ module Evaluation where
 
 open import Library
 open import WellTypedSyntax
-open import Value
-open import Environment
+open import Environment public
 
 -- We do not need a return statement when a function returns void.
 

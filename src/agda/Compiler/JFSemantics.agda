@@ -87,19 +87,24 @@ data CondEval : ∀ {Φ Φ'} (c : Cond Φ Φ') (φ : Frame Φ) (φ' : Frame Φ')
     → v ⟨ op ⟩ (+ 0) ⇓ᶜ b
     → CondEval (cmpZero op) (just v ∷ φ) φ b
 
+-- A judgement for evaluating function calls
 
-module _ {Σ : Sig} where
+FunEvalT : Sig → Set₁
+FunEvalT Σ = ∀ {Δ t} (δ : Frame Δ) (f : funType Δ t ∈ Σ) (v : Val t) → Set
 
-  --
+module _ {Σ : Sig} (_⊢_⇓ᶠ_ : FunEvalT Σ) where
+
+  -- Evaluation of function calls, treating them as black box.
 
   data CallIEval : ∀ {Φ Φ'} (j : CallI Σ Φ Φ') (φ : Frame Φ) (φ' : Frame Φ') → Set where
 
-    -- evCall :
-    --   → CallIEval (call f)
+    evCall : ∀ {Δ t} {f : (funType Δ t) ∈ Σ} {δ : Frame Δ} {v : Val t} {Φ} {φ : Frame Φ}
+      → δ ⊢ f ⇓ᶠ v
+      → CallIEval (call f) (δ List.All.++ φ) (φ ▷ᵛ v)
 
-    -- evBuiltin :
-    --   → δ ⊢ b ⇓ᵇ v
-    --   → CallIEval (builtin b) (δ ++⁺ φ) (φ ▷ᵛ v)
+    evBuiltin : ∀ {Δ t} {b : Builtin (funType Δ t)} {δ : Vals Δ} {v : Val t} {Φ} {φ : Frame Φ}
+      → δ ⊢ b ⇓ᵇ v
+      → CallIEval (builtin b) (List.All.map just δ List.All.++ φ) (φ ▷ᵛ v)
 
   -- Small step operational semantics of jump-free instructions.
   -- A jf instruction relates two machine states (before and after the instruction).

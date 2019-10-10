@@ -11,7 +11,7 @@ open import Compiler.JumpFreeInstructions public
 open import Compiler.Labels               public
 open import Compiler.FlowChart
 
-module _ (Σ : Sig) (rt : Type) where
+module BBTypes (Σ : Sig) (rt : Type) where
 
   -- Basic blocks are flow charts without label definition
 
@@ -26,6 +26,41 @@ module _ (Σ : Sig) (rt : Type) where
     bbExec     : ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') (bb : BB Λ Ξ') → BB Λ Ξ
 
   BB′ = λ Ξ Λ → BB Λ Ξ
+
+  BBs : ∀ {Λ Λ'} (ξ : Λ ⊆ Λ') → Set
+  BBs {Λ} {Λ′} ξ = (□ λ Λ″ → AllExt (BB Λ″) ξ) Λ′
+
+  data BBOrGoto (Ξ : MT) (Λ : Labels) : Set where
+    block : (bb : □ (BB′ Ξ) Λ) → BBOrGoto Ξ Λ
+    goto  : (l  : □ (Ξ ∈_) Λ)  → BBOrGoto Ξ Λ
+
+  record WithBBs (P : Labels → Set) (Λ : Labels) : Set where
+    constructor _∙_∙_
+    field
+      {Ext} : Labels
+      ext   : Λ ⊆ Ext
+      bbs   : BBs ext
+      res   : P Ext
+
+  CompRes :  (Ξ : MT) (Λ : Labels) → Set
+  CompRes Ξ Λ = WithBBs (BBOrGoto Ξ) Λ
+
+
+module _ {Σ : Sig} {rt : Type} where
+
+  open BBTypes Σ rt
+
+  -- Weakening.
+
+  weakBB : ∀{Ξ} → BB′ Ξ ⇒ □ (BB′ Ξ)
+  weakBB (bbGoto l)           ρ = bbGoto (⊆-lookup ρ l)
+  weakBB (bbReturn)           ρ = bbReturn
+  weakBB (bbIfElse c bb₁ bb₂) ρ = bbIfElse c (weakBB bb₁ ρ) (weakBB bb₂ ρ)
+  weakBB (bbIf c l bb)        ρ = bbIf c (⊆-lookup ρ l) (weakBB bb ρ)
+  weakBB (bbExec j bb)        ρ = bbExec j (weakBB bb ρ)
+
+
+  -- Smart constructors.
 
   -- Execute j, then pop t.
 
@@ -56,13 +91,6 @@ module _ (Σ : Sig) (rt : Type) where
 
   -- Compilation of C-- to basic blocks
 
-  BBs : ∀ {Λ Λ'} (ξ : Λ ⊆ Λ') → Set
-  BBs {Λ} {Λ′} ξ = (□ λ Λ″ → AllExt (BB Λ″) ξ) Λ′
-
-  data BBOrGoto (Ξ : MT) (Λ : Labels) : Set where
-    block : (bb : □ (BB′ Ξ) Λ) → BBOrGoto Ξ Λ
-    goto  : (l  : □ (Ξ ∈_) Λ)  → BBOrGoto Ξ Λ
-
   gotoToBB : ∀{Ξ Λ} → BBOrGoto Ξ Λ → □ (BB′ Ξ) Λ
   gotoToBB (block bb) = bb
   gotoToBB (goto l)   = λ ρ → bbGoto (l ρ)
@@ -70,17 +98,6 @@ module _ (Σ : Sig) (rt : Type) where
   weakBOG : ∀{Ξ Λ Λ′} (ρ : Λ ⊆ Λ′) → BBOrGoto Ξ Λ → BBOrGoto Ξ Λ′
   weakBOG ρ (block bb) = block (bb ∙ ρ)
   weakBOG ρ (goto l)   = goto  (l  ∙ ρ)
-
-  record WithBBs (P : Labels → Set) (Λ : Labels) : Set where
-    constructor _∙_∙_
-    field
-      {Ext} : Labels
-      ext   : Λ ⊆ Ext
-      bbs   : BBs ext
-      res   : P Ext
-
-  CompRes :  (Ξ : MT) (Λ : Labels) → Set
-  CompRes Ξ Λ = WithBBs (BBOrGoto Ξ) Λ
 
   mapBBs :  ∀ {P Q} (f : P ⇒ Q) → WithBBs P ⇒ WithBBs Q
   mapBBs f (ext ∙ bbs ∙ p) = ext ∙ bbs ∙ f p
@@ -333,6 +350,8 @@ module _ (Σ : Sig) (rt : Type) where
     compileExps []       = id
     compileExps (e ∷ es) = compileExps es ∘ compileExp e
 
+open BBTypes
+
 -- Method
 
 -- Meth : (Σ : Sig) (ft : FunType) → Set
@@ -361,11 +380,11 @@ bbDefaultReturn void  = bbReturn
 compileDef : ∀{Σ ft} → Def Σ ft → Meth Σ ft
 compileDef {Σ} {funType Δ rt} (Γ , ss) = record
   { labels = Λ
-  ; entry  = gotoToBB _ _ bb ⊆-refl
+  ; entry  = gotoToBB bb ⊆-refl
   ; blocks = extendAll (bbs ⊆-refl) []
   }
   where
-  cr = compileStms Σ rt ss $ crBB Σ rt λ ρ → bbDefaultReturn rt
+  cr = compileStms ss $ crBB λ ρ → bbDefaultReturn rt
   open WithBBs cr using (bbs) renaming (Ext to Λ; res to bb)
 
 -- Methods

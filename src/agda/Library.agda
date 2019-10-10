@@ -47,8 +47,11 @@ open import Level             public using (Level; _⊔_)
 
 open import IO.Primitive      public using (IO)
 
-open import Relation.Binary.PropositionalEquality public using (_≗_; _≡_; refl; trans; cong; subst)
 open import Relation.Binary public using (Decidable; Rel)
+open import Relation.Binary.PropositionalEquality public using (_≗_; _≡_; refl; trans; cong; subst)
+import Relation.Binary.Construct.Closure.ReflexiveTransitive renaming (_◅◅_ to _++_)
+module Seq = Relation.Binary.Construct.Closure.ReflexiveTransitive
+open Seq public using () renaming (Star to Seq; ε to []; _◅_ to _∷_) hiding (module Star)
 open import Relation.Nullary public using (¬_; Dec; yes; no)
 open import Relation.Nullary.Decidable public using (⌊_⌋) renaming (map′ to mapDec)
 open import Relation.Unary public using (_∩_) renaming (_⊆_ to _⇒_)
@@ -93,7 +96,7 @@ module Integer where
 -- Lists.
 
 module List where
-  open import Data.List.Base        public using ([_]; _++_; concat; map; foldl; foldr; reverse; sum; fromMaybe)
+  open import Data.List.Base        public using ([_]; _++_; concat; map; foldl; foldr; reverse; sum; fromMaybe; intersperse)
   open import Data.List.All         public using (All; []; _∷_) hiding (module All)
   open import Data.List.Categorical public using (module TraversableM)
 
@@ -127,7 +130,8 @@ module List where
       sameIndex (here!  ) (here!  ) = yes (refl , refl)
 
   module All where
-    open import Data.List.All public using (lookup; map; tail; tabulate; reduce; zip)
+    open import Data.List.Relation.Unary.All public using (lookup; map; tail; tabulate; reduce; zip)
+    open import Data.List.Relation.Unary.All.Properties public using () renaming (++⁺ to _++_)
 
     module _ {a p} {A : Set a} {P : A → Set p} where
 
@@ -323,7 +327,39 @@ vcat : List (List String) → List String
 vcat = List.concat
 
 vsep : List (List String) → List String
-vsep = List.foldr (λ xs ys → xs ++ "" ∷ ys) []
+vsep = List.concat ∘ List.intersperse [ "" ] -- List.foldr (λ xs ys → xs ++ "" ∷ ys) []
+
+-- Yoneda extension
+
+module Yoneda {o h} {Ob : Set o} (Hom : Ob → Ob → Set h) where
+
+  -- Hom(x,-): Covariant Hom functor
+
+  Yonedaˡ : Ob → Ob → Set (o ⊔ h)
+  Yonedaˡ y z = ∀{x} → Hom x y → Hom x z
+
+  -- Hom(_,z): Contravariant Hom functor
+
+  Yonedaʳ : Ob → Ob → Set (o ⊔ h)
+  Yonedaʳ x y = ∀{z} → Hom y z → Hom x z
+
+module YonedaEmbedding {o h} {Ob : Set o} {Hom : Ob → Ob → Set h}
+  (_∙_ : ∀ {x y z} → Hom x y → Hom y z → Hom x z) (open Yoneda Hom) where
+
+  yonedaˡ : ∀{x y} → Hom x y → Yonedaˡ x y
+  yonedaˡ h g = g ∙ h
+
+  yonedaʳ : ∀{x y} → Hom x y → Yonedaʳ x y
+  yonedaʳ h g = h ∙ g
+
+module YonedaProjection {o h} {Ob : Set o} {Hom : Ob → Ob → Set h}
+  (id : ∀{x} → Hom x x) (open Yoneda Hom) where
+
+  reifyˡ : ∀{x y} → Yonedaˡ x y → Hom x y
+  reifyˡ f = f id
+
+  reifyʳ : ∀{x y} → Yonedaʳ x y → Hom x y
+  reifyʳ f = f id
 
 
 -- Place overloaded monad operation in module
@@ -428,3 +464,7 @@ postulate
 printBool : Bool → String
 printBool true  = "true"
 printBool false = "false"
+
+-- -}
+-- -}
+-- -}

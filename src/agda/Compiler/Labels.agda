@@ -26,8 +26,11 @@ F →̇ G = λ Λ → F Λ → G Λ
 
 -- Kripke function space
 
--- _□→_ : (F G : Labels → Set) → Labels → Set
--- (F □→ G) = □ (F →̇ G)
+_□→_ : (F G : Labels → Set) → Labels → Set
+F □→ G = □ (F →̇ G)
+
+_□⇒_ : (F G : Labels → Set) → Set
+F □⇒ G = ∀{Λ} → (F □→ G) Λ
 
 -- Comonad structure
 
