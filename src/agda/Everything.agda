@@ -16,13 +16,14 @@ import IOTree
 import Interpreter
 
 import Compiler.JumpFreeInstructions
+import Compiler.JFSemantics
 import Compiler.Labels
-
-import Compiler.FlowChart
-import Compiler.FC.CompileToFC
-import Compiler.FC.FCSemantics
 
 import Compiler.BasicBlocks
 import Compiler.BB.FCToBB
 import Compiler.BB.BBSemantics
 import Compiler.BB.ToJasmin
+
+import Compiler.FlowChart
+import Compiler.FC.CompileToFC
+import Compiler.FC.FCSemantics

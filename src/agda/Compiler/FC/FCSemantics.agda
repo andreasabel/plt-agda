@@ -1,3 +1,5 @@
+{-# OPTIONS --allow-unsolved-metas #-}
+
 module Compiler.FC.FCSemantics where
 
 open import Library
@@ -31,7 +33,7 @@ module _ {Σ : Sig} {rt : Type} where
       -- Single jump-free instruction.
 
       evExec : ∀{Ξ Ξ'} {jf : JF Σ Ξ Ξ'} {fc} {ξ ξ'}
-           → JFEval jf ξ ξ'
+           → JFEval {!!} jf ξ ξ'
            → FCEval ƛ v ξ' fc
            → FCEval ƛ v ξ (fcExec jf fc)
 

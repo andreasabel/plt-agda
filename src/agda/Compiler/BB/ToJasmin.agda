@@ -208,6 +208,9 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
   jfToJVM (callI (builtin b)) = [ "invokestatic" <t> "Runtime/" <> builtinToJVM _ b ]
   jfToJVM (comment xs)         = "" ∷ List.map c>_ xs ++ [ "" ]
 
+  jfsToJVM : ∀ {Ξ Ξ'} → JFs Σ Ξ Ξ' → List String
+  jfsToJVM = Seq.fold _ (λ jf → jfToJVM jf ++_) []
+
   module MethodToJVM (rt : Type) {Λ : Labels} (labelNames : AssocList String Λ) where
 
     labelToJVM : ∀{Ξ} (l : Ξ ∈ Λ) → String
@@ -223,13 +226,25 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
     isNextBlock _ _ = false
 
     module _ (ml : Maybe (∃ λ Ξ′ → Ξ′ ∈ Λ)) where
+      open BBTypes Σ rt
 
-      bbToJVM : ∀ Ξ (bb : BB Σ rt Λ Ξ) → BBToJVM
-      bbToJVM Ξ (bbExec j bb) = emit Ξ (jfToJVM j) ◇ bbToJVM _ bb
-      bbToJVM Ξ (bbGoto l)    = unless (isNextBlock ml l) $ emit Ξ [ "goto" <t> labelToJVM l ]
-      bbToJVM Ξ bbReturn      = emit Ξ [ typePrefix rt "return" ]
-      bbToJVM Ξ (bbIf c l bb) = emit Ξ (condToJVM (labelToJVM l) c) ◇ bbToJVM _ bb
-      bbToJVM Ξ (bbIfElse c bb bb₁) = impossible where postulate impossible : _
+      mutual
+
+        bbToJVM : ∀ Ξ (bb : BB Λ Ξ) → BBToJVM
+        bbToJVM Ξ (mkBB jfs ctrl) = emit Ξ (jfsToJVM jfs) ◇ bbCtrlToJVM _ ctrl
+
+        bbCtrlToJVM : ∀ Ξ (bb : BBCtrl Λ Ξ) → BBToJVM
+        bbCtrlToJVM Ξ (bbGoto l)    = unless (isNextBlock ml l) $ emit Ξ [ "goto" <t> labelToJVM l ]
+        bbCtrlToJVM Ξ bbReturn      = emit Ξ [ typePrefix rt "return" ]
+        bbCtrlToJVM Ξ (bbIf c l bb) = emit Ξ (condToJVM (labelToJVM l) c) ◇ bbToJVM _ bb
+        bbCtrlToJVM Ξ (bbIfElse c bb bb₁) = impossible where postulate impossible : _
+
+      -- bbToJVM : ∀ Ξ (bb : BB Λ Ξ) → BBToJVM
+      -- bbToJVM Ξ (bbExec j bb) = emit Ξ (jfToJVM j) ◇ bbToJVM _ bb
+      -- bbToJVM Ξ (bbGoto l)    = unless (isNextBlock ml l) $ emit Ξ [ "goto" <t> labelToJVM l ]
+      -- bbToJVM Ξ bbReturn      = emit Ξ [ typePrefix rt "return" ]
+      -- bbToJVM Ξ (bbIf c l bb) = emit Ξ (condToJVM (labelToJVM l) c) ◇ bbToJVM _ bb
+      -- bbToJVM Ξ (bbIfElse c bb bb₁) = impossible where postulate impossible : _
 
 
     -- -- bbsToJVM : ∀{Λ′} → List.All (BB Σ rt Λ) Λ′ → BBToJVM
@@ -252,8 +267,9 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
     labelNames = List.All.tabulate (("L" <>_) ∘ printNat ∘ List.Any.toℕ)
 
     open MethodToJVM rt labelNames
+    open BBTypes Σ rt
 
-    blockToJVM : ∀{Ξ} (l : Ξ ∈ Λ) → String × BB Σ rt Λ Ξ → BBToJVM
+    blockToJVM : ∀{Ξ} (l : Ξ ∈ Λ) → String × BB Λ Ξ → BBToJVM
     blockToJVM l (ls , bb) = record out { code = (ls <> ":") ∷ BBToJVM.code out }
       where out = bbToJVM (just (_ , l)) _ bb
 
@@ -309,3 +325,7 @@ programToJVM className funNames (program meths _) = vsep $ header ∷ init ∷ m
     ∷ ""
     ∷ ".end method"
     ∷ []
+
+-- -}
+-- -}
+-- -}

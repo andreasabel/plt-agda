@@ -28,7 +28,7 @@ module _ {Σ : Sig} {P : Prg Σ Σ} {M : Meths Σ Σ} {rt : Type} {rv : Val rt} 
     → CREval M ƛ rv cr (γ , φ)
   corrExp evConst (ev□Block {□bb = □bb} sem) with □bb ⊆-refl
   ... | bb = ev□Block {!rt!}
-  corrExp evConst (ev□Goto sem) = ev□Block (evExec (evStackI evConst) (evGoto sem))
+  corrExp evConst (ev□Goto sem) = ev□Block (evExec (evCons (evStackI evConst) evNil) (evGoto sem))
   corrExp (evVar x) sem = {!!}
   corrExp (evApp x x₁ x₂ x₃) sem = {!!}
   corrExp (evBuiltin x x₁) sem = {!!}

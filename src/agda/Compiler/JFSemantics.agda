@@ -129,3 +129,14 @@ module _ {Σ : Sig} (_⊢_⇓ᶠ_ : FunEvalT Σ) where
 
     evComment : ∀{Ξ} {ξ : MS Ξ} {rem}
       → JFEval (comment rem) ξ ξ
+
+
+  data JFsEval : ∀ {Ξ Ξ'} (j : JFs Σ Ξ Ξ') (ξ : MS Ξ) (ξ' : MS Ξ') → Set where
+
+    evNil : ∀{Ξ} {ξ : MS Ξ}
+      → JFsEval [] ξ ξ
+
+    evCons : ∀ {Ξ₁ Ξ₂ Ξ₃} {j : JF Σ Ξ₁ Ξ₂} {jfs : JFs Σ Ξ₂ Ξ₃} {ξ₁ : MS Ξ₁} {ξ₂ : MS Ξ₂} {ξ₃ : MS Ξ₃}
+      → JFEval j ξ₁ ξ₂
+      → JFsEval jfs ξ₂ ξ₃
+      → JFsEval (j ∷ jfs) ξ₁ ξ₃

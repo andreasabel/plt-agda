@@ -15,17 +15,35 @@ module BBTypes (Σ : Sig) (rt : Type) where
 
   -- Basic blocks are flow charts without label definition
 
-  data BB (Λ : Labels) : (Ξ : MT) → Set where
-    -- Ends:
-    bbGoto   : ∀{Ξ} (l : Ξ ∈ Λ) → BB Λ Ξ             -- goto join point (same Ξ)
-    bbReturn : ∀{Γ Φ}           → BB Λ (Γ , Φ ▷ᵇ rt) -- return from function (stack is destroyed)
-    -- Branching:
-    bbIfElse : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (bb bb' : BB Λ (Γ , Φ')) → BB Λ (Γ , Φ)
-    bbIf     : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (l : (Γ , Φ') ∈ Λ) (bb : BB Λ (Γ , Φ')) → BB Λ (Γ , Φ)
-    -- Cons-like: Instruction
-    bbExec     : ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') (bb : BB Λ Ξ') → BB Λ Ξ
+  mutual
+
+    record BB (Λ : Labels) (Ξ : MT) : Set where
+      inductive; constructor mkBB
+      field
+        {Ξ'}     : MT
+        jumpFree : JFs Σ Ξ Ξ'
+        controlI : BBCtrl Λ Ξ'
+
+    data BBCtrl (Λ : Labels) : (Ξ : MT) → Set where
+      -- Ends:
+      bbGoto   : ∀{Ξ} (l : Ξ ∈ Λ) → BBCtrl Λ Ξ             -- goto join point (same Ξ)
+      bbReturn : ∀{Γ Φ}           → BBCtrl Λ (Γ , Φ ▷ᵇ rt) -- return from function (stack is destroyed)
+      -- Branching:
+      bbIfElse : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (bb bb' : BB Λ (Γ , Φ')) → BBCtrl Λ (Γ , Φ)
+      bbIf     : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (l : (Γ , Φ') ∈ Λ) (bb : BB Λ (Γ , Φ')) → BBCtrl Λ (Γ , Φ)
+
+  -- data BB (Λ : Labels) : (Ξ : MT) → Set where
+  --   -- Ends:
+  --   bbGoto   : ∀{Ξ} (l : Ξ ∈ Λ) → BB Λ Ξ             -- goto join point (same Ξ)
+  --   bbReturn : ∀{Γ Φ}           → BB Λ (Γ , Φ ▷ᵇ rt) -- return from function (stack is destroyed)
+  --   -- Branching:
+  --   bbIfElse : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (bb bb' : BB Λ (Γ , Φ')) → BB Λ (Γ , Φ)
+  --   bbIf     : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (l : (Γ , Φ') ∈ Λ) (bb : BB Λ (Γ , Φ')) → BB Λ (Γ , Φ)
+  --   -- Cons-like: Instruction
+  --   bbExec     : ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') (bb : BB Λ Ξ') → BB Λ Ξ
 
   BB′ = λ Ξ Λ → BB Λ Ξ
+  BBCtrl′ = λ Ξ Λ → BBCtrl Λ Ξ
 
   BBs : ∀ {Λ Λ'} (ξ : Λ ⊆ Λ') → Set
   BBs {Λ} {Λ′} ξ = (□ λ Λ″ → AllExt (BB Λ″) ξ) Λ′
@@ -52,28 +70,34 @@ module _ {Σ : Sig} {rt : Type} where
 
   -- Weakening.
 
-  weakBB : ∀{Ξ} → BB′ Ξ ⇒ □ (BB′ Ξ)
-  weakBB (bbGoto l)           ρ = bbGoto (⊆-lookup ρ l)
-  weakBB (bbReturn)           ρ = bbReturn
-  weakBB (bbIfElse c bb₁ bb₂) ρ = bbIfElse c (weakBB bb₁ ρ) (weakBB bb₂ ρ)
-  weakBB (bbIf c l bb)        ρ = bbIf c (⊆-lookup ρ l) (weakBB bb ρ)
-  weakBB (bbExec j bb)        ρ = bbExec j (weakBB bb ρ)
+  mutual
+    weakBB : ∀{Ξ} → BB′ Ξ ⇒ □ (BB′ Ξ)
+    weakBB (mkBB jfs ctrl) ρ = mkBB jfs (weakBBCtrl ctrl ρ)
+
+    weakBBCtrl : ∀{Ξ} → BBCtrl′ Ξ ⇒ □ (BBCtrl′ Ξ)
+    weakBBCtrl (bbGoto l)           ρ = bbGoto (⊆-lookup ρ l)
+    weakBBCtrl (bbReturn)           ρ = bbReturn
+    weakBBCtrl (bbIfElse c bb₁ bb₂) ρ = bbIfElse c (weakBB bb₁ ρ) (weakBB bb₂ ρ)
+    weakBBCtrl (bbIf c l bb)        ρ = bbIf c (⊆-lookup ρ l) (weakBB bb ρ)
 
 
   -- Smart constructors.
 
   -- Execute j, then pop t.
 
-  bbStackIPop : ∀ {t Γ Φ Φ'} (j : StackI Φ (t ∷ Φ')) → BB′ (Γ , Φ') ⇒ BB′ (Γ , Φ)
-  bbStackIPop     (const v)  = id
-  bbStackIPop     dup        = id
-  bbStackIPop {t} pop        = bbExec (stackI pop)             ∘ bbExec (stackI (pop {t = ` t}))
-  bbStackIPop {t} (arith op) = bbExec (stackI (pop {t = ` t})) ∘ bbExec (stackI (pop {t = ` t}))
+  -- bbStackIPop : ∀ {t Γ Φ Φ'} (j : StackI Φ (t ∷ Φ')) → BB′ (Γ , Φ') ⇒ BB′ (Γ , Φ)
+  -- bbStackIPop j (mkBB jfs ctrl) = mkBB (stackIPop j jfs) ctrl
 
-  bbStoreIPop : ∀ {t Γ Φ Φ'} (j : StoreI Γ Φ (t ∷ Φ')) → BB′ (Γ , Φ') ⇒ BB′ (Γ , Φ)
-  bbStoreIPop (load x)     = id
-  bbStoreIPop (store x)    = bbExec (storeI (store x)) ∘ bbExec (stackI pop)
-  bbStoreIPop (incDec b x) = bbExec (stackI pop) ∘ bbExec (storeI (incDec b x))
+  -- bbStackIPop : ∀ {t Γ Φ Φ'} (j : StackI Φ (t ∷ Φ')) → BB′ (Γ , Φ') ⇒ BB′ (Γ , Φ)
+  -- bbStackIPop     (const v)  = id
+  -- bbStackIPop     dup        = id
+  -- bbStackIPop {t} pop        = bbExec (stackI pop)             ∘ bbExec (stackI (pop {t = ` t}))
+  -- bbStackIPop {t} (arith op) = bbExec (stackI (pop {t = ` t})) ∘ bbExec (stackI (pop {t = ` t}))
+
+  -- bbStoreIPop : ∀ {t Γ Φ Φ'} (j : StoreI Γ Φ (t ∷ Φ')) → BB′ (Γ , Φ') ⇒ BB′ (Γ , Φ)
+  -- bbStoreIPop (load x)     = id
+  -- bbStoreIPop (store x)    = bbExec (storeI (store x)) ∘ bbExec (stackI pop)
+  -- bbStoreIPop (incDec b x) = bbExec (stackI pop) ∘ bbExec (storeI (incDec b x))
 
   -- bbExecPop : ∀ {Γ Φ Φ' t} (j : JF Σ (Γ , Φ) (Γ , t ∷ Φ')) → BB′ (Γ , Φ') ⇒ BB′ (Γ , Φ)
   -- bbExecPop j = {!j!}
@@ -81,19 +105,22 @@ module _ {Σ : Sig} {rt : Type} where
   -- Smart cons, doing peephole optimizations.
 
   bbExecOpt :  ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') → BB′ Ξ' ⇒ BB′ Ξ
-  bbExecOpt j            (bbExec (stackI (pop {t = void})) bb) = bbExec j bb
-  bbExecOpt (stackI  j)  (bbExec (stackI (pop {t = ` t })) bb) = bbStackIPop j bb
-  bbExecOpt (storeI  j)  (bbExec (stackI (pop {t = ` t })) bb) = bbStoreIPop j bb
-  bbExecOpt (comment x)  (bbExec (stackI (pop {t = ` t })) bb) = bbExec (stackI pop) $ bbExec (comment x) bb
-  bbExecOpt (comment x)  (bbExec (comment y)               bb) = bbExec (comment $ x ++ y) bb
-  bbExecOpt (scopeI adm) (bbExec (comment x)               bb) = bbExec (comment x) $ bbExec (scopeI adm) bb  -- HACK to join comments over "empty" instructions
-  bbExecOpt j bb = bbExec j bb
+  bbExecOpt j (mkBB jfs ctrl) = mkBB (jfExecOpt j jfs) ctrl
+
+  -- bbExecOpt :  ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') → BB′ Ξ' ⇒ BB′ Ξ
+  -- bbExecOpt j            (bbExec (stackI (pop {t = void})) bb) = bbExec j bb
+  -- bbExecOpt (stackI  j)  (bbExec (stackI (pop {t = ` t })) bb) = bbStackIPop j bb
+  -- bbExecOpt (storeI  j)  (bbExec (stackI (pop {t = ` t })) bb) = bbStoreIPop j bb
+  -- bbExecOpt (comment x)  (bbExec (stackI (pop {t = ` t })) bb) = bbExec (stackI pop) $ bbExec (comment x) bb
+  -- bbExecOpt (comment x)  (bbExec (comment y)               bb) = bbExec (comment $ x ++ y) bb
+  -- bbExecOpt (scopeI adm) (bbExec (comment x)               bb) = bbExec (comment x) $ bbExec (scopeI adm) bb  -- HACK to join comments over "empty" instructions
+  -- bbExecOpt j bb = bbExec j bb
 
   -- Compilation of C-- to basic blocks
 
   gotoToBB : ∀{Ξ Λ} → BBOrGoto Ξ Λ → □ (BB′ Ξ) Λ
   gotoToBB (block bb) = bb
-  gotoToBB (goto l)   = λ ρ → bbGoto (l ρ)
+  gotoToBB (goto l)   = λ ρ → mkBB [] (bbGoto (l ρ))
 
   weakBOG : ∀{Ξ Λ Λ′} (ρ : Λ ⊆ Λ′) → BBOrGoto Ξ Λ → BBOrGoto Ξ Λ′
   weakBOG ρ (block bb) = block (bb ∙ ρ)
@@ -159,6 +186,13 @@ module _ {Σ : Sig} {rt : Type} where
 
   fix : ∀ {Ξ Λ} → CompRes Ξ (Ξ ∷ Λ) → CompRes Ξ Λ
   fix (η ∙ bbs ∙ bb)
+     -- η : (Ξ ∷ Λ) ⊆ Λ′
+     -- We could try to get Λ⁻ and l : Ξ ∈ Λ′ such that τ : Λ ⊆ Λ⁻
+     -- and then construct a renaming from Λ′ to Ξ ∷ Λ⁻ that takes
+     -- l to here!.
+     -- This renaming would then be applied to bbs and bb to get
+     -- bbs′ and bb′
+     -- NOT: -- Use ∷ˡ⁻ : ∀ {a as bs} → Sublist R (a ∷ as) bs → Sublist R as bs
     = ⊆-trans ⊆-wk1 η
     ∙ (λ ρ → AllExt-comp (gotoToBB bb ρ ∷ AllExt-id) (bbs ρ))
     ∙ goto (λ ρ → ⊆-lookup (⊆-trans η ρ) here!)
@@ -167,7 +201,7 @@ module _ {Σ : Sig} {rt : Type} where
 
   crIfElse' : ∀{Γ Φ Φ' Λ} (c : Cond Φ Φ') (cr₁ cr₂ : CompRes (Γ , Φ') Λ) → CompRes (Γ , Φ) Λ
   crIfElse' c cr₁ cr₂ =
-    mapBBs (λ te → block (λ ρ → bbIfElse c (proj₁ (te ρ)) (proj₂ (te ρ)))) $
+    mapBBs (λ te → block (λ ρ → mkBB [] (bbIfElse c (proj₁ (te ρ)) (proj₂ (te ρ))))) $
     joinBBs (crToBB cr₁) (crToBB cr₂)
 
   -- Compiling to unary if.
@@ -178,16 +212,19 @@ module _ {Σ : Sig} {rt : Type} where
     (bbw : WithBBs (□ (BB′ (Γ , Φ'))) Λ)
     → CompRes (Γ , Φ) Λ
   crIf c lw bbw =
-    mapBBs (λ te → block (λ ρ → bbIf c (proj₁ (te ρ)) (proj₂ (te ρ)))) $
+    mapBBs (λ te → block (λ ρ → mkBB [] (bbIf c (proj₁ (te ρ)) (proj₂ (te ρ))))) $
     joinBBs lw bbw
 
   crIfElse : ∀{Γ Φ Φ' Λ} (c : Cond Φ Φ') (cr₁ cr₂ : CompRes (Γ , Φ') Λ) → CompRes (Γ , Φ) Λ
   crIfElse c (ext₁ ∙ bbs₁ ∙ goto l₁  ) (ext₂ ∙ bbs₂ ∙ block bb₂) = crIf c           (ext₁ ∙ bbs₁ ∙ l₁) (ext₂ ∙ bbs₂ ∙ bb₂)
-  crIfElse c (ext₁ ∙ bbs₁ ∙ goto l₁  ) (ext₂ ∙ bbs₂ ∙ goto l₂  ) = crIf c           (ext₁ ∙ bbs₁ ∙ l₁) (ext₂ ∙ bbs₂ ∙ (bbGoto ∘ l₂))
+  crIfElse c (ext₁ ∙ bbs₁ ∙ goto l₁  ) (ext₂ ∙ bbs₂ ∙ goto l₂  ) = crIf c           (ext₁ ∙ bbs₁ ∙ l₁) (ext₂ ∙ bbs₂ ∙ (mkBB [] ∘ bbGoto ∘ l₂))
   crIfElse c (ext₁ ∙ bbs₁ ∙ block bb₁) (ext₂ ∙ bbs₂ ∙ goto l₂  ) = crIf (negCond c) (ext₂ ∙ bbs₂ ∙ l₂) (ext₁ ∙ bbs₁ ∙ bb₁)
   crIfElse c cr₁@(_ ∙ _ ∙ block _)     (ext₂ ∙ bbs₂ ∙ block bb₂) = crIf c           (crToGoto' cr₁)    (ext₂ ∙ bbs₂ ∙ bb₂)
 
   -- Non-optimizing:
+
+  bbExec :  ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') → BB′ Ξ' ⇒ BB′ Ξ
+  bbExec j (mkBB jfs ctrl) = mkBB (j ∷ jfs) ctrl
 
   crExec' : ∀{Ξ Ξ' Λ} (j : JF Σ Ξ Ξ') (bb : CompRes Ξ' Λ) → CompRes Ξ Λ
   crExec' j = mapBBs λ k → block $ bbExec j ∘ gotoToBB k
@@ -215,7 +252,7 @@ module _ {Σ : Sig} {rt : Type} where
       → CompRes (Γ ▷ mt , Φ)
       ⇒ CompRes (Γ , Φ)
 
-    compileStm s@(sReturn e)       _ = commentStm s $ compileExp e $ crBB λ ρ → bbReturn
+    compileStm s@(sReturn e)       _ = commentStm s $ compileExp e $ crBB λ ρ → mkBB [] bbReturn
     compileStm s@(sExp e)            = commentStm s ∘ compileExp e ∘ crExec (stackI pop)
     compileStm s@(sInit x nothing)   = commentStm s ∘ crExec (scopeI (decl x))
     compileStm s@(sInit x (just e))  = commentStm s ∘ compileExp e ∘ crExec (scopeI (decl x)) ∘ crExec (storeI (store (vzero x)))
@@ -370,8 +407,8 @@ record Meth (Σ : Sig) (ft : FunType) : Set where
 -- a default value will be returned.
 
 bbDefaultReturn : ∀ {Σ Λ Ξ} rt → BB Σ rt Λ Ξ
-bbDefaultReturn (` t) = bbExec (stackI (const (defaultVal` t))) bbReturn
-bbDefaultReturn void  = bbReturn
+bbDefaultReturn (` t) = bbExec (stackI (const (defaultVal` t))) (mkBB [] bbReturn)
+bbDefaultReturn void  = mkBB [] bbReturn
 
 -- compileDef : ∀{Σ ft} → Def Σ ft → Meth Σ ft
 -- compileDef {Σ} {funType Δ rt} (Γ , ss) =

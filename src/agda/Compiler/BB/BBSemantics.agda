@@ -40,47 +40,95 @@ module _ {Σ : Sig} (ms : Meths Σ Σ) where -- {rt : Type} (_⊢_⇓ᶠ_ : FunE
 
       -- Single jump-free instruction.
 
-      evExec : ∀{Ξ Ξ'} {ξ ξ'} {jf : JF Σ Ξ Ξ'} {bb : BB Σ rt Λ Ξ'}
+      evExec : ∀{Ξ Ξ'} {ξ ξ'} {jfs : JFs Σ Ξ Ξ'} {ctrl : BBCtrl Σ rt Λ Ξ'}
 
-           → JFEval _⊢_⇓ᶠ_ jf ξ ξ'
-           → BBEval ƛ v ξ' bb
-           → BBEval ƛ v ξ (bbExec jf bb)
+           → JFsEval _⊢_⇓ᶠ_ jfs ξ ξ'
+           → BBCtrlEval ƛ v ξ' ctrl
+           → BBEval ƛ v ξ (mkBB jfs ctrl)
+
+    data BBCtrlEval {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) : ∀ {Ξ} (ξ : MS Ξ) → BBCtrl Σ rt Λ Ξ → Set where
 
       -- Return.
 
       evReturn : ∀ {Γ Φ} {γ : Env Γ} {φ : Frame (Φ ▷ᵇ rt)}
            → ReturnVal rt v φ
-           → BBEval ƛ v (γ , φ) bbReturn
+           → BBCtrlEval ƛ v (γ , φ) bbReturn
 
       -- Goto l amounts to fetching the flowchart corresponding to l from ƛ and continue there.
 
       evGoto : ∀{Ξ l}{ξ : MS Ξ}
            → BBEval ƛ v ξ (List.All.lookup ƛ l)
-           → BBEval ƛ v ξ (bbGoto l)
+           → BBCtrlEval ƛ v ξ (bbGoto l)
 
       -- Unary conditionals.
 
       evIfTrue : ∀{Γ Φ Φ′} {γ : Env Γ} {φ : Frame Φ} {φ′ : Frame Φ′} {c : Cond Φ Φ′} {lᵗ : (Γ , Φ′) ∈ Λ} {bbᶠ : BB Σ rt Λ (Γ , Φ′)}
            → CondEval c φ φ′ true
            → BBEval ƛ v (γ , φ′) (List.All.lookup ƛ lᵗ)
-           → BBEval ƛ v (γ , φ ) (bbIf c lᵗ bbᶠ)
+           → BBCtrlEval ƛ v (γ , φ ) (bbIf c lᵗ bbᶠ)
 
       evIfFalse : ∀{Γ Φ Φ′} {γ : Env Γ} {φ : Frame Φ} {φ′ : Frame Φ′} {c : Cond Φ Φ′} {lᵗ : (Γ , Φ′) ∈ Λ} {bbᶠ : BB Σ rt Λ (Γ , Φ′)}
            → CondEval c φ φ′ false
            → BBEval ƛ v (γ , φ′) bbᶠ
-           → BBEval ƛ v (γ , φ ) (bbIf c lᵗ bbᶠ)
+           → BBCtrlEval ƛ v (γ , φ ) (bbIf c lᵗ bbᶠ)
 
       -- Binary conditionals.
 
       evIfElseTrue : ∀{Γ Φ Φ′} {γ : Env Γ} {φ : Frame Φ} {φ′ : Frame Φ′} {c : Cond Φ Φ′} {bbᵗ bbᶠ : BB Σ rt Λ (Γ , Φ′)}
            → CondEval c φ φ′ true
            → BBEval ƛ v (γ , φ′) bbᵗ
-           → BBEval ƛ v (γ , φ ) (bbIfElse c bbᵗ bbᶠ)
+           → BBCtrlEval ƛ v (γ , φ ) (bbIfElse c bbᵗ bbᶠ)
 
       evIfElseFalse : ∀{Γ Φ Φ′} {γ : Env Γ} {φ : Frame Φ} {φ′ : Frame Φ′} {c : Cond Φ Φ′} {bbᵗ bbᶠ : BB Σ rt Λ (Γ , Φ′)}
            → CondEval c φ φ′ false
            → BBEval ƛ v (γ , φ′) bbᶠ
-           → BBEval ƛ v (γ , φ ) (bbIfElse c bbᵗ bbᶠ)
+           → BBCtrlEval ƛ v (γ , φ ) (bbIfElse c bbᵗ bbᶠ)
+
+    -- data BBEval {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) : ∀ {Ξ} (ξ : MS Ξ) → BB Σ rt Λ Ξ → Set where
+
+    --   -- Single jump-free instruction.
+
+    --   evExec : ∀{Ξ Ξ'} {ξ ξ'} {jf : JF Σ Ξ Ξ'} {bb : BB Σ rt Λ Ξ'}
+
+    --        → JFEval _⊢_⇓ᶠ_ jf ξ ξ'
+    --        → BBEval ƛ v ξ' bb
+    --        → BBEval ƛ v ξ (bbExec jf bb)
+
+    --   -- Return.
+
+    --   evReturn : ∀ {Γ Φ} {γ : Env Γ} {φ : Frame (Φ ▷ᵇ rt)}
+    --        → ReturnVal rt v φ
+    --        → BBEval ƛ v (γ , φ) bbReturn
+
+    --   -- Goto l amounts to fetching the flowchart corresponding to l from ƛ and continue there.
+
+    --   evGoto : ∀{Ξ l}{ξ : MS Ξ}
+    --        → BBEval ƛ v ξ (List.All.lookup ƛ l)
+    --        → BBEval ƛ v ξ (bbGoto l)
+
+    --   -- Unary conditionals.
+
+    --   evIfTrue : ∀{Γ Φ Φ′} {γ : Env Γ} {φ : Frame Φ} {φ′ : Frame Φ′} {c : Cond Φ Φ′} {lᵗ : (Γ , Φ′) ∈ Λ} {bbᶠ : BB Σ rt Λ (Γ , Φ′)}
+    --        → CondEval c φ φ′ true
+    --        → BBEval ƛ v (γ , φ′) (List.All.lookup ƛ lᵗ)
+    --        → BBEval ƛ v (γ , φ ) (bbIf c lᵗ bbᶠ)
+
+    --   evIfFalse : ∀{Γ Φ Φ′} {γ : Env Γ} {φ : Frame Φ} {φ′ : Frame Φ′} {c : Cond Φ Φ′} {lᵗ : (Γ , Φ′) ∈ Λ} {bbᶠ : BB Σ rt Λ (Γ , Φ′)}
+    --        → CondEval c φ φ′ false
+    --        → BBEval ƛ v (γ , φ′) bbᶠ
+    --        → BBEval ƛ v (γ , φ ) (bbIf c lᵗ bbᶠ)
+
+    --   -- Binary conditionals.
+
+    --   evIfElseTrue : ∀{Γ Φ Φ′} {γ : Env Γ} {φ : Frame Φ} {φ′ : Frame Φ′} {c : Cond Φ Φ′} {bbᵗ bbᶠ : BB Σ rt Λ (Γ , Φ′)}
+    --        → CondEval c φ φ′ true
+    --        → BBEval ƛ v (γ , φ′) bbᵗ
+    --        → BBEval ƛ v (γ , φ ) (bbIfElse c bbᵗ bbᶠ)
+
+    --   evIfElseFalse : ∀{Γ Φ Φ′} {γ : Env Γ} {φ : Frame Φ} {φ′ : Frame Φ′} {c : Cond Φ Φ′} {bbᵗ bbᶠ : BB Σ rt Λ (Γ , Φ′)}
+    --        → CondEval c φ φ′ false
+    --        → BBEval ƛ v (γ , φ′) bbᶠ
+    --        → BBEval ƛ v (γ , φ ) (bbIfElse c bbᵗ bbᶠ)
 
     data BOGEval {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) : ∀ {Ξ} (ξ : MS Ξ) → BBOrGoto Σ rt Ξ Λ → Set where
 
