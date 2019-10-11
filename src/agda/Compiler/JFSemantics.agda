@@ -66,8 +66,11 @@ data ScopeIEval : ∀{Γ Γ′} (adm : AdmScope Γ Γ′) (γ : Env Γ) (γ′ :
   evPopBlock : ∀{Γ Δ} {γ : Env Γ} {δ : Frame Δ}
     → ScopeIEval popBlock (δ ∷ γ) γ
 
-  evDecl : ∀{Γ Δ t x} {γ : Env Γ} {δ : Frame Δ}
-    → ScopeIEval (decl {t = t} x) (δ ∷ γ) ((nothing ∷ δ) ∷ γ)
+  evDecl : ∀{Γ t x} {γ : Env Γ}
+    → ScopeIEval (decl {t = t} x) γ (push nothing γ)
+
+  -- evDecl : ∀{Γ Δ t x} {γ : Env Γ} {δ : Frame Δ}
+  --   → ScopeIEval (decl {t = t} x) (δ ∷ γ) ((nothing ∷ δ) ∷ γ)
 
 -- Semantics of conditions
 
@@ -104,7 +107,7 @@ module JFEvaluation {Σ : Sig} (_⊢_⇓ᶠ_ : FunEvalT Σ) where
 
     evBuiltin : ∀ {Δ t} {b : Builtin (funType Δ t)} {δ : Vals Δ} {v : Val t} {Φ} {φ : Frame Φ}
       → δ ⊢ b ⇓ᵇ v
-      → CallIEval (builtin b) (List.All.map just δ List.All.++ φ) (φ ▷ᵛ v)
+      → CallIEval (builtin b) (φ ▷ᵛˢ δ) (φ ▷ᵛ v)
 
   -- Small step operational semantics of jump-free instructions.
   -- A jf instruction relates two machine states (before and after the instruction).

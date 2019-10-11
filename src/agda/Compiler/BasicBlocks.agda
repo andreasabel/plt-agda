@@ -344,33 +344,40 @@ module _ {Σ : Sig} {rt : Type} where
     compileExp (eOp (cmp   op) e e') = compileBoolOp (cmp op) e e'
     compileExp (eOp (logic op) e e') = compileBoolOp (logic op) e e'
 
-    compileExp (eIncrDecr pre  (incr int) x) = crExec (storeI (incDec inc x)) ∘ crExec (storeI (load x))
-    compileExp (eIncrDecr pre  (decr int) x) = crExec (storeI (incDec dec x)) ∘ crExec (storeI (load x))
-    compileExp (eIncrDecr post (incr int) x) = crExec (storeI (load x)) ∘ crExec (storeI (incDec inc x))
-    compileExp (eIncrDecr post (decr int) x) = crExec (storeI (load x)) ∘ crExec (storeI (incDec dec x))
+    compileExp (eIncrDecr pp id x)   = compileIncrDecr pp id x
 
-    compileExp (eIncrDecr pre  (incr double) x)
+    compileIncrDecr : ∀ {Γ t Φ}
+      → (pp : PrePost) (id : IncrDecr t) (x : Var Γ t)
+      → CompRes (Γ , t ∷ Φ)  -- Continuation expects a value of type t on the stack.
+      ⇒ CompRes (Γ , Φ)
+
+    compileIncrDecr pre  (incr int) x = crExec (storeI (incDec inc x)) ∘ crExec (storeI (load x))
+    compileIncrDecr pre  (decr int) x = crExec (storeI (incDec dec x)) ∘ crExec (storeI (load x))
+    compileIncrDecr post (incr int) x = crExec (storeI (load x)) ∘ crExec (storeI (incDec inc x))
+    compileIncrDecr post (decr int) x = crExec (storeI (load x)) ∘ crExec (storeI (incDec dec x))
+
+    compileIncrDecr pre  (incr double) x
       = crExec (storeI (load x))
       ∘ crExec (stackI (const 1.0))
       ∘ crExec (stackI (arith (plus double)))
       ∘ crExec (storeI (store x))
       ∘ crExec (storeI (load x))
 
-    compileExp (eIncrDecr pre  (decr double) x)
+    compileIncrDecr pre  (decr double) x
       = crExec (storeI (load x))
       ∘ crExec (stackI (const 1.0))
       ∘ crExec (stackI (arith (minus double)))
       ∘ crExec (storeI (store x))
       ∘ crExec (storeI (load x))
 
-    compileExp (eIncrDecr post (incr double) x)
+    compileIncrDecr post (incr double) x
       = crExec (storeI (load x))
       ∘ crExec (stackI dup)
       ∘ crExec (stackI (const 1.0))
       ∘ crExec (stackI (arith (plus double)))
       ∘ crExec (storeI (store x))
 
-    compileExp (eIncrDecr post (decr double) x)
+    compileIncrDecr post (decr double) x
       = crExec (storeI (load x))
       ∘ crExec (stackI dup)
       ∘ crExec (stackI (const 1.0))

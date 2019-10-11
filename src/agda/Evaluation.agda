@@ -48,6 +48,11 @@ lookupUpdated : ∀ {Γ t} {γ γ'} {v : Val` t} {x : Var Γ t}
 lookupUpdated assX = admitted
   where postulate admitted : _
 
+updateTop : ∀ x {Γ t} {γ : Env Γ} {v₀ : Entry` t} {v : Val` t}
+  → push` v₀ γ ⊢ vzero x ≔ v ⇓ push` (just v) γ
+updateTop = admitted
+  where postulate admitted : _
+
 -- Evaluation of built-ins (non-deterministic).
 -- A read can return any value of the correct type (except undefined).
 -- A print returns void (side effect is ignored).
