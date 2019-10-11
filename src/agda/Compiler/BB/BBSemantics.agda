@@ -132,16 +132,24 @@ module _ {Σ : Sig} (ms : Meths Σ Σ) where -- {rt : Type} (_⊢_⇓ᶠ_ : FunE
 
     data BOGEval {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) : ∀ {Ξ} (ξ : MS Ξ) → BBOrGoto Σ rt Ξ Λ → Set where
 
-      ev□Block : ∀ {Ξ} {ξ : MS Ξ} {□bb : □ (BB′ Σ rt Ξ) Λ}
+      ev□Block' : ∀ {Ξ} {ξ : MS Ξ} {□bb : □ (BB′ Σ rt Ξ) Λ}
         → BBEval  ƛ v ξ (□bb ⊆-refl)
         → BOGEval ƛ v ξ (block □bb)
 
-      ev□Goto : ∀ {Ξ} {ξ : MS Ξ} {□l : □ (Ξ ∈_) Λ}
+      ev□Goto' : ∀ {Ξ} {ξ : MS Ξ} {□l : □ (Ξ ∈_) Λ}
         → BBEval  ƛ v ξ (List.All.lookup ƛ (□l ⊆-refl))
         → BOGEval ƛ v ξ (goto □l)
 
-    CREval : ∀ {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) {Ξ} (cr : CompRes Σ rt Ξ Λ) (ξ : MS Ξ) → Set
-    CREval ƛ v (η ∙ ƛ' ∙ bog) ξ = BOGEval (ƛ' ⊆-refl ++LS ƛ) v ξ bog
+    data CREval {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) {Ξ} : (cr : CompRes Σ rt Ξ Λ) (ξ : MS Ξ) → Set where
+      evCR : ∀{Λ'} {η : Λ ⊆ Λ'} {ƛ' : BBs Σ rt η} {bog ξ}
+        → BOGEval (ƛ' ⊆-refl ++LS ƛ) v ξ bog
+        → CREval ƛ v (η ∙ ƛ' ∙ bog) ξ
+
+    pattern ev□Block ev = evCR (ev□Block' ev)
+    pattern ev□Goto  ev = evCR (ev□Goto'  ev)
+
+    -- CREval : ∀ {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) {Ξ} (cr : CompRes Σ rt Ξ Λ) (ξ : MS Ξ) → Set
+    -- CREval ƛ v (η ∙ ƛ' ∙ bog) ξ = BOGEval (ƛ' ⊆-refl ++LS ƛ) v ξ bog
 
       -- open WithBBs cr using () renaming (ext to Λ'; bbs to ƛ'; res to bb)
       -- field

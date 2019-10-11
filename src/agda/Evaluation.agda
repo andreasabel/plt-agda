@@ -42,6 +42,12 @@ _⊢_≔_⇓_ : ∀ {Γ} (γ : Env Γ) {t} (x : Var Γ t) (v : Val` t) (γ′ : 
 γ ⊢ var x Δ∈Γ t∈Δ ≔ v ⇓ γ′ = -- UpdateEnv v x γ γ′
   List.All.UpdateAt (List.All.UpdateAt (λ _ → just v ≡_) t∈Δ) Δ∈Γ γ γ′
 
+lookupUpdated : ∀ {Γ t} {γ γ'} {v : Val` t} {x : Var Γ t}
+  → γ ⊢ x ≔ v ⇓ γ'
+  → γ' ⊢ x ⇓ˣ v
+lookupUpdated assX = admitted
+  where postulate admitted : _
+
 -- Evaluation of built-ins (non-deterministic).
 -- A read can return any value of the correct type (except undefined).
 -- A print returns void (side effect is ignored).
@@ -148,9 +154,9 @@ mutual
 
     evNil : P , γ ⊢ [] ⇓ᵉˢ [] , γ
 
-    evCons : ∀ {t} {e : Exp` Σ Γ t} {v : Val` t} {γ′}
-      → P , γ ⊢ e ⇓ᵉ v , γ′           → ∀{Δ} {es : Exps Σ Γ Δ} {vs} {γ″}
-      → P , γ′ ⊢ es ⇓ᵉˢ vs , γ″
+    evSnoc : ∀ {t} {e : Exp` Σ Γ t} {v : Val` t} {γ′} {Δ} {es : Exps Σ Γ Δ} {vs} {γ″}
+      → P , γ ⊢ es ⇓ᵉˢ vs , γ′
+      → P , γ′ ⊢ e ⇓ᵉ v , γ″
       → P , γ ⊢ (e ∷ es) ⇓ᵉˢ (v ∷ vs) , γ″
 
   data _,_⊢_⇓ˢ_,_ {Σ} (P : Prg Σ Σ) {Γ} (γ : Env Γ) {rt} :
