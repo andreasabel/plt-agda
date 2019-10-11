@@ -105,7 +105,7 @@ module _ {Σ : Sig} {rt : Type} where
   -- Smart cons, doing peephole optimizations.
 
   bbExecOpt :  ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') → BB′ Ξ' ⇒ BB′ Ξ
-  bbExecOpt j (mkBB jfs ctrl) = mkBB (jfExecOpt j jfs) ctrl
+  bbExecOpt j (mkBB jfs ctrl) = mkBB (j ∷ᵒ jfs) ctrl
 
   -- bbExecOpt :  ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') → BB′ Ξ' ⇒ BB′ Ξ
   -- bbExecOpt j            (bbExec (stackI (pop {t = void})) bb) = bbExec j bb

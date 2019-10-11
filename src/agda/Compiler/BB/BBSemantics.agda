@@ -40,7 +40,7 @@ module _ {Σ : Sig} (ms : Meths Σ Σ) where -- {rt : Type} (_⊢_⇓ᶠ_ : FunE
 
       -- Single jump-free instruction.
 
-      evExec : ∀{Ξ Ξ'} {ξ ξ'} {jfs : JFs Σ Ξ Ξ'} {ctrl : BBCtrl Σ rt Λ Ξ'}
+      evBB : ∀{Ξ Ξ'} {ξ ξ'} {jfs : JFs Σ Ξ Ξ'} {ctrl : BBCtrl Σ rt Λ Ξ'}
 
            → JFsEval _⊢_⇓ᶠ_ jfs ξ ξ'
            → BBCtrlEval ƛ v ξ' ctrl

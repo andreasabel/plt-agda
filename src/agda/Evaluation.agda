@@ -65,7 +65,22 @@ data _≡_±1_ : ∀{t} (v v' : Val` t) (k : IncrDecr t) → Set where
 postulate
   _⟨_⟩_⇓ᵃ_ : ∀{t} (v : Val` t) (op : ArithOp t) (v' : Val` t) (w : Val` t) → Set
   _⟨_⟩_⇓ᶜ_ : ∀{t} (v : Val` t) (op : CmpOp t) (v' : Val` t) (b : Bool) → Set
-  _⟨_⟩_⇓ᵒ_ : ∀{t t'} (v : Val` t) (op : Op t t') (v' : Val` t) (w : Val` t') → Set
+  _⟨_⟩_⇓ˡ_ : ∀ (b₁ : Bool) (op : LogicOp) (b₂ : Bool) (b : Bool) → Set
+
+
+data _⟨_⟩_⇓ᵒ_ : ∀{t t'} (v : Val` t) (op : Op t t') (v' : Val` t) (w : Val` t') → Set where
+
+  evArith : ∀{t} {op : ArithOp t} {v₁ v₂ v : Val` t}
+    → v₁ ⟨ op ⟩ v₂ ⇓ᵃ v
+    → v₁ ⟨ arith op ⟩ v₂ ⇓ᵒ v
+
+  evCmp : ∀{t} {op : CmpOp t} {v₁ v₂ : Val` t} {b : Bool}
+    → v₁ ⟨ op ⟩ v₂ ⇓ᶜ b
+    → v₁ ⟨ cmp op ⟩ v₂ ⇓ᵒ b
+
+  evLogic : ∀{op : LogicOp} {b₁ b₂ b : Bool}
+    → b₁ ⟨ op ⟩ b₂ ⇓ˡ b
+    → b₁ ⟨ logic op ⟩ b₂ ⇓ᵒ b
 
 
 --  γ ⊢ x ⇓ v ±=1 k ⇓ v′ , γ′

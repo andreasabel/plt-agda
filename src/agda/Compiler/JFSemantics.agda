@@ -92,7 +92,7 @@ data CondEval : ∀ {Φ Φ'} (c : Cond Φ Φ') (φ : Frame Φ) (φ' : Frame Φ')
 FunEvalT : Sig → Set₁
 FunEvalT Σ = ∀ {Δ t} (δ : Frame Δ) (f : funType Δ t ∈ Σ) (v : Val t) → Set
 
-module _ {Σ : Sig} (_⊢_⇓ᶠ_ : FunEvalT Σ) where
+module JFEvaluation {Σ : Sig} (_⊢_⇓ᶠ_ : FunEvalT Σ) where
 
   -- Evaluation of function calls, treating them as black box.
 
@@ -133,10 +133,95 @@ module _ {Σ : Sig} (_⊢_⇓ᶠ_ : FunEvalT Σ) where
 
   data JFsEval : ∀ {Ξ Ξ'} (j : JFs Σ Ξ Ξ') (ξ : MS Ξ) (ξ' : MS Ξ') → Set where
 
-    evNil : ∀{Ξ} {ξ : MS Ξ}
+    [] : ∀{Ξ} {ξ : MS Ξ}
       → JFsEval [] ξ ξ
 
-    evCons : ∀ {Ξ₁ Ξ₂ Ξ₃} {j : JF Σ Ξ₁ Ξ₂} {jfs : JFs Σ Ξ₂ Ξ₃} {ξ₁ : MS Ξ₁} {ξ₂ : MS Ξ₂} {ξ₃ : MS Ξ₃}
+    _∷_ : ∀ {Ξ₁ Ξ₂ Ξ₃} {j : JF Σ Ξ₁ Ξ₂} {jfs : JFs Σ Ξ₂ Ξ₃} {ξ₁ : MS Ξ₁} {ξ₂ : MS Ξ₂} {ξ₃ : MS Ξ₃}
       → JFEval j ξ₁ ξ₂
       → JFsEval jfs ξ₂ ξ₃
       → JFsEval (j ∷ jfs) ξ₁ ξ₃
+
+module _ {Σ : Sig} {_⊢_⇓ᶠ_ : FunEvalT Σ} (open JFEvaluation _⊢_⇓ᶠ_) where
+
+  -- Evaluation of concatenation of JFs
+
+  _++-ev_ :  ∀ {Ξ₁ Ξ₂ Ξ₃} {jfs : JFs Σ Ξ₁ Ξ₂} {jfs' : JFs Σ Ξ₂ Ξ₃} {ξ₁ : MS Ξ₁} {ξ₂ : MS Ξ₂} {ξ₃ : MS Ξ₃}
+      → JFsEval jfs               ξ₁ ξ₂
+      → JFsEval jfs'              ξ₂ ξ₃
+      → JFsEval (jfs Seq.++ jfs') ξ₁ ξ₃
+  []       ++-ev es' = es'
+  (e ∷ es) ++-ev es' = e ∷ (es ++-ev es')
+
+
+  -- Evaluation of stack operation before pop
+
+  evStackIPop : ∀ {Γ t} {γ : Env Γ} {v : Entry` t} {Φ Φ'} {φ : Frame Φ} {φ' : Frame Φ'}
+                  {j : StackI Φ (t ∷ Φ')}
+    → StackIEval j               φ  (v ∷ φ')
+    → JFsEval (stackIPop j) (γ , φ) (γ , φ')
+  evStackIPop evConst     = []
+  evStackIPop evDup       = []
+  evStackIPop (evArith _) = evStackI evPop     ∷ evStackI evPop ∷ []
+  evStackIPop evPop       = evStackI evPop     ∷ evStackI evPop ∷ []
+  evStackIPop evPopVoid   = evStackI evPopVoid ∷ evStackI evPop ∷ []
+
+  -- Evaluation of store operation before pop
+
+  evStoreIPop : ∀ {Γ t} {γ γ' : Env Γ} {v} {Φ Φ'} {φ : Frame Φ} {φ' : Frame Φ'}
+                  {j : StoreI Γ Φ (t ∷ Φ')}
+    → StoreIEval j          (γ , φ) (γ' , v ∷ φ')
+    → JFsEval (storeIPop j) (γ , φ) (γ' , φ')
+  evStoreIPop (evStore x) = evStoreI (evStore x) ∷ evStackI evPop ∷ []
+  evStoreIPop (evLoad  x) = []
+
+  -- Correctness of optimizing sequencing
+
+  _∷ᵒ-ev_ : ∀ {Ξ₁ Ξ₂ Ξ₃} {j : JF Σ Ξ₁ Ξ₂} {jfs : JFs Σ Ξ₂ Ξ₃} {ξ₁ : MS Ξ₁} {ξ₂ : MS Ξ₂} {ξ₃ : MS Ξ₃}
+      → JFEval j ξ₁ ξ₂
+      → JFsEval jfs ξ₂ ξ₃
+      → JFsEval (j ∷ᵒ jfs) ξ₁ ξ₃
+  -- No optimization:
+  e ∷ᵒ-ev []                            = e ∷ []
+  e ∷ᵒ-ev es@(evCallI  _           ∷ _) = e ∷ es
+  e ∷ᵒ-ev es@(evStoreI _           ∷ _) = e ∷ es
+  e ∷ᵒ-ev es@(evScopeI _           ∷ _) = e ∷ es
+  e ∷ᵒ-ev es@(evStackI evConst     ∷ _) = e ∷ es
+  e ∷ᵒ-ev es@(evStackI evDup       ∷ _) = e ∷ es
+  e ∷ᵒ-ev es@(evStackI (evArith _) ∷ _) = e ∷ es
+  -- Pop void:
+  e ∷ᵒ-ev (evStackI evPopVoid     ∷ es) = e ∷ es
+  -- Pop
+  evStackI e ∷ᵒ-ev (evStackI evPop ∷ es) = evStackIPop e ++-ev es
+  evStoreI e ∷ᵒ-ev (evStackI evPop ∷ es) = evStoreIPop e ++-ev es
+  evComment  ∷ᵒ-ev (evStackI evPop ∷ es) = evStackI evPop ∷ evComment ∷ es
+  -- Comment floating and merging:
+  e@(evScopeI _) ∷ᵒ-ev   (evComment ∷ es) = evComment ∷ e ∷ es
+  evComment      ∷ᵒ-ev   (evComment ∷ es) = evComment ∷ es
+  -- No optimization (pop):
+  e@(evCallI  _) ∷ᵒ-ev es@(evStackI evPop ∷ _) = e ∷ es
+  e@(evScopeI _) ∷ᵒ-ev es@(evStackI evPop ∷ _) = e ∷ es
+  -- No optimization (comment):
+  e@(evCallI  _) ∷ᵒ-ev es@(evComment      ∷ _) = e ∷ es
+  e@(evStackI _) ∷ᵒ-ev es@(evComment      ∷ _) = e ∷ es
+  e@(evStoreI _) ∷ᵒ-ev es@(evComment      ∷ _) = e ∷ es
+
+open JFEvaluation public
+
+{-
+
+  -- Smart constructors
+
+  corr : ∀ {Γ t} {x : Var Γ t} {γ : Env Γ}{v : Val` t} {Φ} {φ : Frame Φ} {Ξ} {ξ : MS Ξ}
+    → ∀ jfs
+    → γ ⊢ x ⇓ˣ v
+    → JFsEval jfs                      (γ , just v ∷ φ) ξ
+    → JFsEval (storeI (load x) ∷ᵒ jfs) (γ , φ)          ξ
+  corr []                  evX evJFs = evStoreI (evLoad evX) ∷ evJFs
+  corr (callI     j ∷ jfs) evX evJFs = evStoreI (evLoad evX) ∷ evJFs
+  corr (stackI    j ∷ jfs) evX evJFs = {!j!}
+  corr (storeI    j ∷ jfs) evX evJFs = evStoreI (evLoad evX) ∷ evJFs
+  corr (scopeI  adm ∷ jfs) evX evJFs = evStoreI (evLoad evX) ∷ evJFs
+  corr (comment rem ∷ jfs) evX evJFs = evStoreI (evLoad evX) ∷ evJFs
+
+-- -}
+-- -}

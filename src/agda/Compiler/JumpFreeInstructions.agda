@@ -115,11 +115,11 @@ module _ {Σ : Sig} where
 
   -- Smart cons, doing peephole optimizations.
 
-  jfExecOpt : ∀{Ξ Ξ′ Ξ″} (j : JF Σ Ξ Ξ′) → JFs Σ Ξ′ Ξ″ → JFs Σ Ξ Ξ″
-  jfExecOpt j            (stackI (pop {t = void}) ∷ jf) = j ∷ jf
-  jfExecOpt (stackI  j)  (stackI (pop {t = ` t }) ∷ jf) = stackIPop j Seq.++ jf
-  jfExecOpt (storeI  j)  (stackI (pop {t = ` t }) ∷ jf) = storeIPop j Seq.++ jf
-  jfExecOpt (comment x)  (stackI (pop {t = ` t }) ∷ jf) = stackI pop ∷ comment x ∷ jf
-  jfExecOpt (comment x)  (comment y               ∷ jf) = comment (x ++ y) ∷ jf
-  jfExecOpt (scopeI adm) (comment x               ∷ jf) = comment x ∷ scopeI adm ∷ jf  -- HACK to join comments over "empty" instructions
-  jfExecOpt j jf = j ∷ jf
+  _∷ᵒ_ : ∀{Ξ Ξ′ Ξ″} (j : JF Σ Ξ Ξ′) → JFs Σ Ξ′ Ξ″ → JFs Σ Ξ Ξ″
+  j            ∷ᵒ (stackI (pop {t = void}) ∷ jf) = j ∷ jf
+  (stackI  j)  ∷ᵒ (stackI (pop {t = ` t }) ∷ jf) = stackIPop j Seq.++ jf
+  (storeI  j)  ∷ᵒ (stackI (pop {t = ` t }) ∷ jf) = storeIPop j Seq.++ jf
+  (comment x)  ∷ᵒ (stackI (pop {t = ` t }) ∷ jf) = stackI pop ∷ comment x ∷ jf
+  (comment x)  ∷ᵒ (comment y               ∷ jf) = comment (x ++ y) ∷ jf
+  (scopeI adm) ∷ᵒ (comment x               ∷ jf) = comment x ∷ scopeI adm ∷ jf  -- HACK to join comments over "empty" instructions
+  j ∷ᵒ jf = j ∷ jf
