@@ -195,6 +195,9 @@ _◇_ : (c c' : BBToJVM) → BBToJVM
   ∙ (maxStack₁ ℕ.⊔ maxStack₂)
   ∙ (code₁ ++ code₂)
 
+mconcat : List BBToJVM → BBToJVM
+mconcat = List.foldr _◇_ mempty
+
 module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
 
   funToJVM : ∀ {ft : FunType} → ft ∈ Σ → String
@@ -208,8 +211,12 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
   jfToJVM (callI (builtin b)) = [ "invokestatic" <t> "Runtime/" <> builtinToJVM _ b ]
   jfToJVM (comment xs)         = "" ∷ List.map c>_ xs ++ [ "" ]
 
-  jfsToJVM : ∀ {Ξ Ξ'} → JFs Σ Ξ Ξ' → List String
-  jfsToJVM = Seq.fold _ (λ jf → jfToJVM jf ++_) []
+  -- Problematic, since then emit does not see the intermediate stack sizes
+  -- jfsToJVM : ∀ {Ξ Ξ'} → JFs Σ Ξ Ξ' → List String
+  -- jfsToJVM = Seq.fold _ (λ jf → jfToJVM jf ++_) []
+
+  jfsToJVM : ∀ {Ξ Ξ'} → JFs Σ Ξ Ξ' → BBToJVM
+  jfsToJVM = Seq.fold _ (λ {Ξ} jf m → emit Ξ (jfToJVM jf) ◇ m) mempty
 
   module MethodToJVM (rt : Type) {Λ : Labels} (labelNames : AssocList String Λ) where
 
@@ -230,13 +237,13 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
 
       mutual
 
-        bbToJVM : ∀ Ξ (bb : BB Λ Ξ) → BBToJVM
-        bbToJVM Ξ (mkBB jfs ctrl) = emit Ξ (jfsToJVM jfs) ◇ bbCtrlToJVM _ ctrl
+        bbToJVM : ∀ {Ξ} (bb : BB Λ Ξ) → BBToJVM
+        bbToJVM (mkBB jfs ctrl) = jfsToJVM jfs ◇ bbCtrlToJVM _ ctrl
 
         bbCtrlToJVM : ∀ Ξ (bb : BBCtrl Λ Ξ) → BBToJVM
         bbCtrlToJVM Ξ (bbGoto l)    = unless (isNextBlock ml l) $ emit Ξ [ "goto" <t> labelToJVM l ]
         bbCtrlToJVM Ξ bbReturn      = emit Ξ [ typePrefix rt "return" ]
-        bbCtrlToJVM Ξ (bbIf c l bb) = emit Ξ (condToJVM (labelToJVM l) c) ◇ bbToJVM _ bb
+        bbCtrlToJVM Ξ (bbIf c l bb) = emit Ξ (condToJVM (labelToJVM l) c) ◇ bbToJVM bb
         bbCtrlToJVM Ξ (bbIfElse c bb bb₁) = impossible where postulate impossible : _
 
       -- bbToJVM : ∀ Ξ (bb : BB Λ Ξ) → BBToJVM
@@ -260,7 +267,7 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
   --   open MethodToJVM rt labelNames
 
   methToJVM : ∀ rt {Δ} → Meth Σ (funType Δ rt) → BBToJVM
-  methToJVM rt (bbMethod Λ entry blocks) = bbToJVM nothing _ entry ◇ blocksToJVM
+  methToJVM rt (bbMethod Λ entry blocks) = bbToJVM nothing entry ◇ blocksToJVM
     where
 
     labelNames : AssocList String Λ
@@ -271,7 +278,7 @@ module MethodsToJVM {Σ : Sig} (funNames : AssocList String Σ) where
 
     blockToJVM : ∀{Ξ} (l : Ξ ∈ Λ) → String × BB Λ Ξ → BBToJVM
     blockToJVM l (ls , bb) = record out { code = (ls <> ":") ∷ BBToJVM.code out }
-      where out = bbToJVM (just (_ , l)) _ bb
+      where out = bbToJVM (just (_ , l)) bb
 
     blocksToJVM : BBToJVM
     blocksToJVM = List.foldr _◇_ mempty $ List.All.reduceWithIndex blockToJVM $ List.All.zip (labelNames , blocks)
@@ -308,6 +315,7 @@ programToJVM className funNames (program meths _) = vsep $ header ∷ init ∷ m
     ∷ []
   init
     = ".method public <init>()V"
+    ∷ ".limit stack 1"
     ∷ ""
     ∷ t> "aload_0"
     ∷ t> "invokespecial java/lang/Object/<init>()V"
@@ -317,7 +325,7 @@ programToJVM className funNames (program meths _) = vsep $ header ∷ init ∷ m
     ∷ []
   main
     = ".method public static main([Ljava/lang/String;)V"
-    ∷ ".limit locals 1"
+    ∷ ".limit stack 1"
     ∷ ""
     ∷ t> ("invokestatic" <+> className <> "/main()I")
     ∷ t> "pop"
