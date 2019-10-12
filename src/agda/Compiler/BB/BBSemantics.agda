@@ -42,8 +42,8 @@ module _ {Σ : Sig} (ms : Meths Σ Σ) where -- {rt : Type} (_⊢_⇓ᶠ_ : FunE
 
       evBB : ∀{Ξ Ξ'} {ξ ξ'} {jfs : JFs Σ Ξ Ξ'} {ctrl : BBCtrl Σ rt Λ Ξ'}
 
-           → JFsEval _⊢_⇓ᶠ_ jfs ξ ξ'
-           → BBCtrlEval ƛ v ξ' ctrl
+           → (evJF   : JFsEval _⊢_⇓ᶠ_ jfs ξ ξ')
+           → (evCtrl : BBCtrlEval ƛ v ξ' ctrl)
            → BBEval ƛ v ξ (mkBB jfs ctrl)
 
     data BBCtrlEval {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) : ∀ {Ξ} (ξ : MS Ξ) → BBCtrl Σ rt Λ Ξ → Set where
@@ -133,11 +133,11 @@ module _ {Σ : Sig} (ms : Meths Σ Σ) where -- {rt : Type} (_⊢_⇓ᶠ_ : FunE
     data BOGEval {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) : ∀ {Ξ} (ξ : MS Ξ) → BBOrGoto Σ rt Ξ Λ → Set where
 
       ev□Block' : ∀ {Ξ} {ξ : MS Ξ} {□bb : □ (BB′ Σ rt Ξ) Λ}
-        → BBEval  ƛ v ξ (□bb ⊆-refl)
+        → (ev : BBEval  ƛ v ξ (□bb ⊆-refl))
         → BOGEval ƛ v ξ (block □bb)
 
       ev□Goto' : ∀ {Ξ} {ξ : MS Ξ} {□l : □ (Ξ ∈_) Λ}
-        → BBEval  ƛ v ξ (List.All.lookup ƛ (□l ⊆-refl))
+        → (ev : BBEval  ƛ v ξ (List.All.lookup ƛ (□l ⊆-refl)))
         → BOGEval ƛ v ξ (goto □l)
 
     data CREval {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) {Ξ} : (cr : CompRes Σ rt Ξ Λ) (ξ : MS Ξ) → Set where
