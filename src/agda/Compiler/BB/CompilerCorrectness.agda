@@ -127,7 +127,7 @@ module _ {Σ : Sig} {P : Prg Σ Σ} {M : Meths Σ Σ} {rt : Type} {rv : Val rt} 
     corrStm (evExp evE)    (cont ev) = corrComment (corrExp evE (corrPop ev))
     corrStm evDecl         (cont ev) = corrComment (corrDecl ev)
     corrStm (evInit evE)   (cont ev) = corrComment (corrExp evE (corrInit ev))
-    corrStm (evBlock evSS) ev = {!!}
+    corrStm (evBlock evSS) ev = corrNewBlock (corrStms evSS {!corrPopBlock <$> ev !})
     corrStm (evWhileDone evF) (cont ev) = corrComment {!!}
     corrStm (evWhileStep evT evS evS') ev = corrComment {!!}
     corrStm (evWhileRet evT evS) ret = corrComment {!!}
@@ -138,6 +138,18 @@ module _ {Σ : Sig} {P : Prg Σ Σ} {M : Meths Σ Σ} {rt : Type} {rv : Val rt} 
       → (evRt : ReturnVal rt rv (φ ▷ᵛ v))
       → CREval M ƛ rv (crBB (λ ρ → mkBB [] bbReturn)) (γ , (φ ▷ᵛ v))
     corrReturn evRt = ev□Block (evBB [] (evReturn evRt))
+
+    corrNewBlock : ∀ {Γ} {γ : Env Γ} {Φ} {φ : Frame Φ} {Λ k} {ƛ : LS Σ rt Λ}
+      → CREval M ƛ rv k ([] ∷ γ , φ)
+      → CREval M ƛ rv (crExec (scopeI newBlock) k) (γ , φ)
+    corrNewBlock (ev□Block (evBB evJF evCtrl)) = ev□Block (evBB (evScopeI evNewBlock ∷ᵒ-ev evJF) evCtrl)
+    corrNewBlock (ev□Goto ev)                  = ev□Block (evBB (evScopeI evNewBlock ∷ []) (evGoto ev))
+
+    corrPopBlock : ∀ {Γ Δ} {γ : Env Γ} {δ : Frame Δ} {Φ} {φ : Frame Φ} {Λ k} {ƛ : LS Σ rt Λ}
+      → CREval M ƛ rv k (γ , φ)
+      → CREval M ƛ rv (crExec (scopeI popBlock) k) (δ ∷ γ , φ)
+    corrPopBlock (ev□Block (evBB evJF evCtrl)) = ev□Block (evBB (evScopeI evPopBlock ∷ᵒ-ev evJF) evCtrl)
+    corrPopBlock (ev□Goto ev)                  = ev□Block (evBB (evScopeI evPopBlock ∷ []) (evGoto ev))
 
     corrDecl : ∀ {t Γ x} {γ : Env Γ} {Φ} {φ : Frame Φ} {Λ k} {ƛ : LS Σ rt Λ}
       → CREval M ƛ rv k (push nothing γ , φ)

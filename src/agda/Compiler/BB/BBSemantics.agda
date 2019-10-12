@@ -11,6 +11,22 @@ open import Evaluation
 open import Compiler.BasicBlocks; open BBTypes
 open import Compiler.JFSemantics
 
+-- Continuation of computation?
+
+data Cont (A : Set) {rt} (v : Val rt) :  (r : Res rt) → Set where
+  ret  : Cont A v (ret v)
+  cont : (ev : A) → Cont A v cont
+
+-- data Cont {rt} (P : Val rt → Set) (v : Val rt) :  (r : Res rt) → Set where
+--   ret  : Cont P v (ret v)
+--   cont : (ev : P v) → Cont P v cont
+
+_<$>_ : ∀{A B : Set} {rt} {v : Val rt} {r : Res rt}
+  → (f : A → B)
+  → Cont A v r → Cont B v r
+f <$> ret     = ret
+f <$> cont ev = cont (f ev)
+
 -- "Label semantics": mapping each label to its basic block
 
 LS : (Σ : Sig) (rt : Type) (Λ : Labels) → Set
@@ -151,10 +167,16 @@ module _ {Σ : Sig} (ms : Meths Σ Σ) where -- {rt : Type} (_⊢_⇓ᶠ_ : FunE
     -- CREval : ∀ {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) {Ξ} (cr : CompRes Σ rt Ξ Λ) (ξ : MS Ξ) → Set
     -- CREval ƛ v (η ∙ ƛ' ∙ bog) ξ = BOGEval (ƛ' ⊆-refl ++LS ƛ) v ξ bog
 
-    data CREval? {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) {Ξ} (cr : CompRes Σ rt Ξ Λ) (ξ : MS Ξ) :  (r : Res rt) → Set where
-      ret  : CREval? ƛ v cr ξ (ret v)
-      cont : CREval ƛ v cr ξ → CREval? ƛ v cr ξ cont
+    -- data CREval? {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) {Ξ} (cr : CompRes Σ rt Ξ Λ) (ξ : MS Ξ) :  (r : Res rt) → Set where
+    --   ret  : CREval? ƛ v cr ξ (ret v)
+    --   cont : (ev : CREval ƛ v cr ξ) → CREval? ƛ v cr ξ cont
 
+    CREval? : ∀ {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) {Ξ} (cr : CompRes Σ rt Ξ Λ) (ξ : MS Ξ) (r : Res rt) → Set
+    CREval? ƛ v cr ξ r = Cont (CREval ƛ v cr ξ) v r
+
+    -- _<$>_ :
+    --   → (f : CREval ƛ v k₁ ξ₁ → CREval ƛ v k₂ ξ₂)
+    --   →  CREval? ƛ v k₁ ξ₁ r → CREval? ƛ v k₂ ξ₂ r)
       -- open WithBBs cr using () renaming (ext to Λ'; bbs to ƛ'; res to bb)
       -- field
       --   BBEval (ƛ ++ ƛ') v ξ bb
