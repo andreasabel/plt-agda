@@ -13,6 +13,10 @@ data ResVal : ∀ t → Res t → Val t → Set where
 _≡return_ : ∀{t} → Res t → Val t → Set
 r ≡return v = ResVal _ r v
 
+_≡return?_ : ∀{t} → Res t → Val t → Set
+ret v' ≡return? v = v' ≡ v
+cont   ≡return? v = ⊤
+
 -- Lookup of variables
 
 record _⊢_⇓ˣ_ {Γ} (γ : Env Γ) {t} (x : Var Γ t) (v : Val` t) : Set where

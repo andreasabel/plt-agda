@@ -151,6 +151,10 @@ module _ {Σ : Sig} (ms : Meths Σ Σ) where -- {rt : Type} (_⊢_⇓ᶠ_ : FunE
     -- CREval : ∀ {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) {Ξ} (cr : CompRes Σ rt Ξ Λ) (ξ : MS Ξ) → Set
     -- CREval ƛ v (η ∙ ƛ' ∙ bog) ξ = BOGEval (ƛ' ⊆-refl ++LS ƛ) v ξ bog
 
+    data CREval? {rt Λ} (ƛ : LS Σ rt Λ) (v : Val rt) {Ξ} (cr : CompRes Σ rt Ξ Λ) (ξ : MS Ξ) :  (r : Res rt) → Set where
+      ret  : CREval? ƛ v cr ξ (ret v)
+      cont : CREval ƛ v cr ξ → CREval? ƛ v cr ξ cont
+
       -- open WithBBs cr using () renaming (ext to Λ'; bbs to ƛ'; res to bb)
       -- field
       --   BBEval (ƛ ++ ƛ') v ξ bb

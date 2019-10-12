@@ -12,11 +12,31 @@ open import Compiler.JFSemantics
 open import Compiler.BasicBlocks
 open import Compiler.BB.BBSemantics
 
-corrReturnVal : ∀ (rt : Type) {rv v : Val rt} {Φ} {φ : Frame Φ}
+corrReturnVal' : ∀ (rt : Type) {rv v : Val rt} {Φ} {φ : Frame Φ}
   → ResVal rt (ret v) rv
   → ReturnVal rt rv (φ ▷ᵛ v)
-corrReturnVal (` t) ret = refl
-corrReturnVal void  ret = _
+corrReturnVal' (` t) ret = refl
+corrReturnVal' void  ret = _
+
+corrReturnVal : ∀ (rt : Type) {v : Val rt} {Φ} {φ : Frame Φ}
+  → ReturnVal rt v (φ ▷ᵛ v)
+corrReturnVal (` t) = refl
+corrReturnVal void  = _
+
+data ReturnRes rt : ∀ (r : Res rt) {Φ} (φ : Frame Φ) → Set where
+
+  ret  : ∀{Φ} {φ : Frame (Φ ▷ᵇ rt)} {v : Val rt}
+       → ReturnVal rt v φ
+       → ReturnRes rt (ret v) φ
+
+  cont : ∀{Φ} {φ : Frame Φ}
+       → ReturnRes rt cont φ
+
+-- corrReturnRes : ∀ (rt : Type) {rv v : Res rt} {Φ} {φ : Frame Φ}
+--   → ResRes rt r rv
+--   → ReturnRes rt r φ
+-- corrReturnRes (` t) ret = refl
+-- corrReturnRes void  ret = _
 
 module _ {Σ : Sig} {P : Prg Σ Σ} {M : Meths Σ Σ} {rt : Type} {rv : Val rt} where
 
@@ -90,38 +110,34 @@ module _ {Σ : Sig} {P : Prg Σ Σ} {M : Meths Σ Σ} {rt : Type} {rv : Val rt} 
     corrCall evF evBody evRt ev = {!!}
 
     corrStms : ∀ {Γ Δ Δ'} {ss : Stms Σ rt Γ Δ Δ'} {γ γ'} {r : Res rt} {Φ} {φ : Frame Φ}
-      → (evRt : r ≡return rv)
       → (evSS : P , γ ⊢ ss ⇓ˢˢ r , γ')
       → ∀ {Λ k ƛ} (let cr = compileStms {rt = rt} ss {Λ} k)
-      → CREval M ƛ rv k  (γ' , φ)
+      → CREval? M ƛ rv k  (γ' , φ) r
       → CREval M ƛ rv cr (γ , φ)
-    corrStms evRt evNil ev = ev
-    corrStms evRt (evCont evS evSS) ev = corrStm {!cont!} evS (corrStms evRt evSS ev)
-    corrStms evRt (evRet evR) ev = {!x!}
+    corrStms evNil             (cont ev) = ev
+    corrStms (evCont evS evSS) ev        = corrStm evS (cont (corrStms evSS ev))
+    corrStms (evRet evR)       ret       = corrStm evR ret
 
     corrStm : ∀ {Γ t} {s : Stm Σ rt Γ t} {γ γ'} {r : Res rt} {Φ} {φ : Frame Φ}
-      → (evRt : r ≡return rv)
       → (evS  : P , γ ⊢ s ⇓ˢ r , γ')
       → ∀ {Λ k ƛ} (let cr = compileStm {rt = rt} s {Λ} k)
-      → CREval M ƛ rv k  (γ' , φ)
-      → CREval M ƛ rv cr (γ , φ)
-    corrStm evRt (evReturn evE) = corrComment ∘ corrExp evE ∘ corrReturn (corrReturnVal _ evRt)
-    corrStm evRt (evExp evE)    = corrComment ∘ corrExp evE ∘ corrPop
-    corrStm evRt evDecl         = corrComment ∘ corrDecl
-    corrStm evRt (evInit evE)   = corrComment ∘ corrExp evE ∘ corrInit
-    corrStm evRt (evBlock evSS) ev = {!!}
-    corrStm evRt (evWhileDone evF) ev = corrComment {!!}
-    corrStm evRt (evWhileStep evT evS evS') ev = corrComment {!!}
-    corrStm evRt (evWhileRet evT evS) ev = corrComment {!!}
-    corrStm evRt (evIfThen evT evS) ev = corrComment {!!}
-    corrStm evRt (evIfElse evF evS) ev = corrComment {!!}
+      → CREval? M ƛ rv k (γ' , φ) r
+      → CREval  M ƛ rv cr (γ , φ)
+    corrStm (evReturn evE) ret       = corrComment (corrExp evE (corrReturn (corrReturnVal _)))
+    corrStm (evExp evE)    (cont ev) = corrComment (corrExp evE (corrPop ev))
+    corrStm evDecl         (cont ev) = corrComment (corrDecl ev)
+    corrStm (evInit evE)   (cont ev) = corrComment (corrExp evE (corrInit ev))
+    corrStm (evBlock evSS) ev = {!!}
+    corrStm (evWhileDone evF) (cont ev) = corrComment {!!}
+    corrStm (evWhileStep evT evS evS') ev = corrComment {!!}
+    corrStm (evWhileRet evT evS) ret = corrComment {!!}
+    corrStm (evIfThen evT evS) ev = corrComment {!!}
+    corrStm (evIfElse evF evS) ev = corrComment {!!}
 
-    corrReturn : ∀ {Γ} {v : Val rt} {γ : Env Γ} {Φ} {φ : Frame Φ} {Λ k} {ƛ : LS Σ rt Λ}
+    corrReturn : ∀ {Γ} {v : Val rt} {γ : Env Γ} {Φ} {φ : Frame Φ} {Λ} {ƛ : LS Σ rt Λ}
       → (evRt : ReturnVal rt rv (φ ▷ᵛ v))
-      → CREval M ƛ rv k                               (γ , φ)
       → CREval M ƛ rv (crBB (λ ρ → mkBB [] bbReturn)) (γ , (φ ▷ᵛ v))
-    corrReturn evRt (ev□Block (evBB evJF evCtrl)) = ev□Block (evBB [] (evReturn evRt))
-    corrReturn evRt (ev□Goto ev)                  = ev□Block (evBB [] (evReturn evRt))
+    corrReturn evRt = ev□Block (evBB [] (evReturn evRt))
 
     corrDecl : ∀ {t Γ x} {γ : Env Γ} {Φ} {φ : Frame Φ} {Λ k} {ƛ : LS Σ rt Λ}
       → CREval M ƛ rv k (push nothing γ , φ)
