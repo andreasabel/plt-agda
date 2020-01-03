@@ -97,12 +97,12 @@ module Integer where
 
 module List where
   open import Data.List.Base        public using ([_]; _++_; concat; map; foldl; foldr; reverse; sum; fromMaybe; intersperse)
-  open import Data.List.All         public using (All; []; _∷_) hiding (module All)
+  open import Data.List.Relation.Unary.All public using (All; []; _∷_) hiding (module All)
   open import Data.List.Categorical public using (module TraversableM)
 
   module Any where
 
-    open import Data.List.Any using (Any; here; there)
+    open import Data.List.Relation.Unary.Any using (Any; here; there)
 
     toℕ : ∀ {a p} {A : Set a} {P : A → Set p} {xs} → Any P xs → ℕ
     toℕ (here  _) = zero
