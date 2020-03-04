@@ -1,0 +1,1100 @@
+\nonstopmode
+\documentclass[t,fleqn,usenames,dvipsnames]{beamer}
+%\documentclass{article}\usepackage{beamerarticle}
+
+\makeatletter
+%\def\leqn{\tagsleft@true}
+%\def\reqn{\tagsleft@false}
+\def\fleq{\@fleqntrue\let\mathindent\@mathmargin \@mathmargin=\leftmargini}
+\def\cneq{\@fleqnfalse}
+\g@addto@macro{\endsubequations}{\addtocounter{equation}{-1}}
+\makeatother
+
+\mode<presentation>
+{
+  % \usetheme{AnnArbor}
+  \useinnertheme[shadow=true]{rounded}
+  \useoutertheme{infolines}
+  %\setbeamercolor*{title in head/foot}{parent=palette secondary}
+  %\useoutertheme{shadow}
+  \usecolortheme{wolverine}
+
+  \setbeamerfont{block title}{size={}}
+  \setbeamercolor{titlelike}{parent=structure,bg=yellow!85!orange}
+
+  % My modification: centered title with white background
+  \setbeamercolor{frametitle}{bg=white}
+  \setbeamertemplate{frametitle}{
+    %\begin{center}
+      \Large\insertframetitle
+      \vspace{1ex}
+      %\hline
+      \par
+    %\end{center}
+  }
+  % %% Does not work
+  % \setbeamercolor{frametitlecentered}{bg=white}
+  % \setbeamertemplate{frametitlecentered}{
+  %   \begin{center}
+  %     \Large\insertframetitle
+  %     \par
+  %   \end{center}
+  % }
+  % plus red emphasis
+  \setbeamercolor{alerted text}{fg=red!70!black}
+
+  % More space between items
+  %\defbeamertemplate*{itemize/enumerate body begin}{default}{\itemsep1ex}
+
+
+  \setbeamercolor{math text}{parent=titlelike}
+%  \setbeamercolor{math text displayed}{parent=palette primary}
+
+  % Fix background of theorems/proof
+  \setbeamercolor{block body}{parent=palette primary}%{bg=yellow!85!orange}
+  \setbeamercolor{block title}{parent=palette secondary}%{bg=orange}
+
+
+
+  \setbeamercovered{transparent}
+  % or whatever (possibly just delete it)
+
+} % end mode presentation
+
+%\usepackage{tcolorbox}
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+%\usepackage{times}  % DYSFUNCTIONAL! looks awful when mixing mathtt and ordinary math.
+\usepackage{ifthen}
+\usepackage{xspace}
+%\usepackage[T1]{fontenc} %no effect
+% Or whatever. Note that the encoding and the font should match. If T1
+% does not look nice, try deleting the line with the fontenc.
+\usepackage{bbm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\usepackage{alltt}
+\usepackage[normalem]{ulem} % strikethrough \sout
+\usepackage{cancel} % strikethrough math mode \cancel
+%\usepackage{enumitem} % set label in itemize
+\usepackage{pifont} % for \tickNo
+%\usepackage{}
+%\usepackage{listings}
+\usepackage[all]{xy}
+%\usepackage{proof}
+%\usepackage{eurosym}
+%\usepackage{graphics}
+\usepackage{bibentry}
+%\nobibliography{short}
+\bibliographystyle{plain}
+%\input{prooftree}
+
+\newtheorem{takehomemessage}[theorem]{\textbf{Take home message}}
+
+%\usepackage{agda}
+%\AgdaNoSpaceAroundCode{}
+
+\DeclareMathSymbol{\chkmark}{\mathord}{AMSa}{"58}
+
+% RGB colors
+\definecolor{darkred}{rgb}{0.5,0,0}
+\definecolor{darkgreen}{rgb}{0,0.5,0}
+\definecolor{darkblue}{rgb}{0,0,0.5}
+\definecolor{dirtyred}{rgb}{0.7,0.2,0.1}
+\definecolor{dirtygreen}{rgb}{0.2,0.4,0.1}
+\definecolor{darkdirtygreen}{rgb}{0.13,0.25,0.07}
+\definecolor{dirtyblue}{rgb}{0.07,0.2,0.5}
+\definecolor{darkdirtyblue}{rgb}{0.1,0.15,0.35}
+\definecolor{lightblue}{rgb}{0.5,0.5,1}
+\definecolor{olivegreen}{rgb}{0.5,0.5,0}
+\definecolor{brown}{rgb}{0.65,0.35,0} % almost gold
+\definecolor{grey}{rgb}{0.33,0.33,0.33}
+\definecolor{darkbrown}{rgb}{0.35,0.15,0}
+\definecolor{darkgrey}{rgb}{0.16,0.16,0.16}
+
+\newcommand{\textred}[1]{{\color{dirtyred}\textbf{#1}}}
+
+%\newcommand{\tickYes}{{\color{darkgreen}\checkmark}} % does not work
+  %since checkmark invokes math mode
+\newcommand{\tickYes}{\ensuremath{\color{darkgreen}\chkmark}}
+\newcommand{\tickNo}{{\color{dirtyred}\hspace{1pt}\ding{55}}}
+
+%\usepackage[curve,matrix,arrow]{xy}
+%\usepackage{tikz} % Drawing diagrams
+%\usepackage{pgflibraryshapes} %Ellipses
+
+
+% MACROS:
+\newcommand{\inst}{}
+\input{baseMacros}
+\renewcommand{\ru}[2]{\dfrac{\begin{array}[b]{@{}c@{}} #1 \end{array}}{\begin{array}[t]{@{}l@{}} #2 \end{array}}}
+
+% black text in mbox
+\newcommand{\mybox}[1]{\mbox{\color{black}#1}}
+
+% meta-level logic
+\renewcommand{\mfor}{\ \mybox{for}\ }
+\renewcommand{\mforsome}{\ \mybox{for some}\ }
+\renewcommand{\mthen}{\ \mybox{then}\ }
+\renewcommand{\mif}{\ \mybox{if}\ }
+\renewcommand{\miff}{\ \mybox{iff}\ }
+\renewcommand{\motherwise}{\ \mybox{otherwise}}
+\renewcommand{\mundefined}{\mybox{undefined}}
+\renewcommand{\mnot}{\mybox{not}\ }
+\renewcommand{\mand}{\ \mybox{and}\ }
+\renewcommand{\mor}{\ \mybox{or}\ }
+\renewcommand{\mimplies}{\ \mybox{implies}\ }
+\renewcommand{\mimply}{\ \mybox{imply}\ }
+\renewcommand{\mforall}{\ \mybox{for all}\ }
+\renewcommand{\mexists}{\mybox{exists}\ }
+\renewcommand{\mexist}{\mybox{exist}\ }
+\renewcommand{\mtrue}{\mybox{true}}
+\renewcommand{\mwith}{\ \mybox{with}\ }
+\renewcommand{\mwhere}{\ \mybox{where}\ }
+\renewcommand{\mholds}{\ \mybox{holds}\ }
+\renewcommand{\munless}{\ \mybox{unless}\ }
+\renewcommand{\mboth}{\ \mybox{both}\ }
+\renewcommand{\msuchthat}{\ \mybox{such that}\ }
+% proofs
+\renewcommand{\msince}{\mybox{since}\ }
+\renewcommand{\mdef}{\mybox{by def.}}
+\renewcommand{\mass}{\mybox{assumption}}
+\renewcommand{\mhyp}{\mybox{by hyp.}}
+\renewcommand{\mlemma}[1]{\mybox{by Lemma~#1}}
+\renewcommand{\mih}[1][]{\mybox{by ind.hyp.}#1}
+\renewcommand{\mgoal}[1][]{\mybox{goal\ifthenelse{\equal{#1}{}}{}{~#1}}}
+\renewcommand{\mby}[1]{\mybox{by #1}}
+\renewcommand{\minfrule}{\mybox{by inference rule}}
+\newcommand{\ONE}{\mathbf{1}}
+
+% DOES NOT WORK:
+% rule with "boring" default text
+\newcommand{\setboring}{\setbeamercolor{math text}{fg=grey}\setbeamercolor{math display}{fg=grey}}
+\newcommand{\bru}[2]{\setboring\dfrac{\setboring#1}{\setboring#2}}
+
+\renewcommand*\ttdefault{txtt} % for listing package
+
+% \newcommand{\defHaskelllistings}{%
+%   \lstset{%
+%     language=Haskell,%
+%     basicstyle=\ttfamily\small\color{darkdirtyblue},% \ttfamily
+%     keywordstyle=\ttfamily\bfseries,% \underbar
+%     identifierstyle=,%
+%     commentstyle=\itshape,%
+%     columns=flexible,%spaceflexible,% fixed,% flexible,%
+%     showstringspaces=false,%
+% %    xleftmargin=\codeindent,% defined below
+%     breaklines=true,%
+%     deletekeywords={succ,zero,head,tail,zipWith,Either,List},%
+%     morekeywords={Set,Size,fun,cofun,pattern},% ,left,right,nil,cons
+%     literate={\\}{{$\lambda$}}1 {->}{{$\rightarrow$~}}2
+%              {<=}{{$\leq$~}}2 {<}{{$<$~}}1
+% %     literate={map}{map~}4
+% %       {even}{even~}5
+% %       {odd}{odd~}4
+%      }%
+% }
+%\defHaskelllistings
+
+\title[Dependently-Typed Compilation]{%
+Type-preserving compilation \\ via dependently typed syntax in Agda}
+
+\author[Abel]{
+  Andreas Abel\inst{1}
+}
+%{F.~Author\inst{1} \and S.~Another\inst{2}}
+% - Give the names in the same order as the appear in the paper.
+% - Use the \inst{?} command only if the authors have different
+%   affiliation.
+
+\institute[] %Chalmers/GU/ENS Cachan] % (optional, but mostly needed)
+{
+  \inst{1}
+  Department of Computer Science and Engineering\\
+  Chalmers and Gothenburg University, Sweden \\[1ex]
+}
+%  \inst{1}%
+%  Department of Computer Science\\
+%  University of Somewhere
+%  \and
+%  \inst{2}%
+%  Department of Theoretical Philosophy\\
+%  University of Elsewhere}
+%% - Use the \inst command only if there are several affiliations.
+%% - Keep it simple, no one is interested in your street address.
+
+\date[IFIP 1.3 2020] % (optional, should be abbreviation of conference name)
+{ IFIP 1.3 Meeting 2020\\
+  Massa Marittima \\
+  16 January 2020
+}
+% - Either use conference name or its abbreviation.
+% - Not really informative to the audience, more for people (including
+%   yourself) who are reading the slides online
+
+%\subject{Software Verification}
+% This is only inserted into the PDF information catalog. Can be left
+% out.
+
+
+
+% If you have a file called "university-logo-filename.xxx", where xxx
+% is a graphic format that can be processed by latex or pdflatex,
+% resp., then you can add a logo as follows:
+
+% \pgfdeclareimage[height=0.5cm]{university-logo}{university-logo-filename}
+% \logo{\pgfuseimage{university-logo}}
+
+
+
+% Delete this, if you do not want the table of contents to pop up at
+% the beginning of each subsection:
+
+%\AtBeginSubsection[]
+%\AtBeginSection[]
+%{
+%  \begin{frame}<beamer>
+%    \frametitle{Outline}
+%    \tableofcontents[currentsection,currentsubsection]
+%  \end{frame}
+%}
+
+
+% If you wish to uncover everything in a step-wise fashion, uncomment
+% the following command:
+
+%\beamerdefaultoverlayspecification{<+->}
+
+\makeatletter
+\def\MLine#1{\par\vspace{1ex}\hspace*{-\@totalleftmargin}\parbox{\textwidth}{\[#1\]}}
+\makeatother
+%\newenvironment{display}{\par\vspace{1ex}\hspace*{-\@totalleftmargin}\parbox{\textwidth}{\[}{\]}}
+
+
+% COLORS
+\newcommand{\cHead}{\color{darkblue}}
+\newcommand{\cSub}{\color{brown}}
+\newcommand{\cWhite}{\color{white}}
+\newcommand{\cGray}{\color{gray}}
+\newcommand{\cGreen}{\color{olivegreen}}
+\newcommand{\cBrown}{\color{brown}}
+\newcommand{\cBlack}{\color{black}}
+\newcommand{\black}[1]{{\cBlack#1}}
+
+\newcommand{\cAnn}{\color{red!80!black}}%purple darkblue
+\newcommand{\cAside}{\color{gray}}
+\newcommand{\cEnum}{\color{darkgreen}}
+\newcommand{\cEm}{\cAnn} %\color{red}}
+\newcommand{\cCo}{\cAnn} %\color{red}} % copattern color
+\newcommand{\cop}[1]{{\cCo#1}}
+\newcommand{\cApp}{\color{violet}}
+\newcommand{\capp}[1]{{\cApp#1}}
+\newcommand{\cFocus}{\color{darkgreen}}
+\newcommand{\focus}[1]{{\cFocus#1}}
+\newcommand{\cMath}{\usebeamercolor[fg]{math text}}
+\newcommand{\cIdent}{\usebeamercolor[fg]{math text}}
+\newcommand{\ident}[1]{{\cIdent#1}}
+\newcommand{\cExp}{\cIdent}
+\newcommand{\cBoring}{\color{grey}}
+\newcommand{\boring}[1]{{\cBoring#1}}
+
+%\newcommand{\ann}[1]{^{\cAnn #1}}
+\newcommand{\unn}[1]{_{\cAnn #1}}
+\newcommand{\annW}[1]{^{\hphantom{#1}}}
+%\newcommand{\Ann}[1]{{\cAnn #1}}
+\newcommand{\AnnW}[1]{\hphantom{#1}}
+\newcommand{\ttAnn}[1]{\{{\cAnn #1}\}}
+% ordinal annotation
+\newcommand{\cOrd}{\cAnn}
+\newcommand{\onn}[1]{^{\cOrd #1}}
+\newcommand{\Onn}[1]{{\cOrd #1}}
+\newcommand{\oforall}[1]{\forall\Onn{#1}.~}
+\newcommand{\oexists}[1]{\exists\Onn{#1}.~}
+\newcommand{\oapp}[1]{\,\Onn{#1}}
+\renewcommand{\emph}[1]{{\cAnn#1}}
+\newcommand{\OSize}{\Onn{Size}}
+\newcommand{\oi}{\Onn{i}}
+\newcommand{\odi}{\Onn{\$i}}
+\newcommand{\oddi}{\Onn{\$\$i}}
+\newcommand{\oj}{\Onn{j}}
+\newcommand{\ohash}{\Onn{\#}}
+
+% \newcommand{\kw}[1]{{\bf#1}}
+\newcommand{\kwdata}{\kw{data}}
+\newcommand{\kwcodata}{\kw{codata}}
+\newcommand{\kwsized}{\kw{sized}}
+\newcommand{\kwfun}{\kw{fun}}
+\newcommand{\kwcofun}{\kw{cofun}}
+\newcommand{\kwlet}{\kw{let}}
+\newcommand{\kwfields}{\kw{fields}}
+%\newcommand{\kw}{\kw{}}
+%\newcommand{\kw}{\kw{}}
+%\newcommand{\kw}{\kw{}}
+\newcommand{\tinl}{\mathsf{inl}}
+\newcommand{\tinr}{\mathsf{inr}}
+
+\renewcommand{\rulename}[1]{#1}
+
+% types
+\newcommand{\cType}{\color{orange!60!black}}
+
+
+\newcommand{\mlsays}[1]{}
+% {\begin{frame}%[fragile=singleslide]
+%   %\frametitle{Himself}
+%   \begin{minipage}[c]{0.5\linewidth}
+%    \includegraphics[height=0.9\textheight]{martin-loef-bw.png}
+%   \end{minipage}% NO SPACE HERE!
+%   \begin{minipage}[c]{0.5\linewidth}
+%    \begin{center}
+%      \bla \\[8ex]
+%      \Huge #1
+%    \end{center}
+%   \end{minipage}
+% \end{frame}
+% }
+
+\newcommand{\JOKE}[1]{} % No jokes.
+\renewcommand{\emph}[1]{\textit{\cType#1}}
+
+\newcommand{\ope}{\twoheadrightarrow}
+
+\DeclareMathOperator*{\amp}{\&}
+\DeclareMathOperator*{\bigamp}{\scalerel*{\&}{\sum}}
+\usepackage{scalerel}
+
+\newcommand{\tSet}{\mathsf{Set}}
+\newcommand{\Set}{\mathsf{Set}}
+
+\newcommand{\tHom}{\mathsf{Hom}}
+
+\newcommand{\tVal}{\mathsf{Val}}
+\newcommand{\Val}[1][]{\tVal_{#1}}
+\newcommand{\tVar}{\mathsf{Var}}
+\newcommand{\Var}[2][]{\mathsf{Var}_{#1}\,#2}
+\newcommand{\tExp}{\mathsf{Exp}}
+\newcommand{\Exp}[2][]{\mathsf{Exp}_{#1}\,#2}
+\newcommand{\tStm}{\mathsf{Stm}}
+\newcommand{\Stm}[3][]{\mathsf{Stm}_{#1}\,#2\,#3}
+\newcommand{\tStms}{\mathsf{Stms}}
+\newcommand{\Stms}[3][]{\mathsf{Stms}_{#1}\,#2\,#3}
+\newcommand{\vrt}{\mathit{r}}
+\newcommand{\vop}{\mathit{op}}
+\newcommand{\tlit}{\mathsf{lit}}
+
+\newcommand{\tvar}{\mathsf{var}}
+\newcommand{\tarith}{\mathsf{arith}}
+\newcommand{\tcmp}{\mathsf{cmp}}
+\newcommand{\tCmpOp}{\mathsf{CmpOp}}
+\newcommand{\CmpOp}[1]{\tCmpOp\,#1}
+\newcommand{\tArithOp}{\mathsf{ArithOp}}
+\newcommand{\ArithOp}[1]{\tArithOp\,#1}
+
+\newcommand{\tassign}{\mathsf{assign}}
+\newcommand{\twhile}{\mathsf{while}}
+\newcommand{\tifElse}{\mathsf{ifElse}}
+\newcommand{\tdecl}{\mathsf{decl}}
+\newcommand{\treturn}{\mathsf{return}}
+\newcommand{\tldc}{\mathsf{ldc}}
+\newcommand{\tload}{\mathsf{load}}
+\newcommand{\tstore}{\mathsf{store}}
+%\newcommand{\tarith}{\mathsf{arith}}
+
+
+\newcommand{\tskip}{\mathsf{skip}}
+\newcommand{\tkeep}{\mathsf{keep}}
+\newcommand{\tdone}{\mathsf{done}}
+\newcommand{\sublist}{\subseteq}
+\newcommand{\tint}{\mathsf{int}}
+\newcommand{\tbool}{\mathsf{bool}}
+\newcommand{\tvoid}{\mathsf{void}}
+\newcommand{\tdouble}{\mathsf{double}}
+
+\newcommand{\ST}{\mathsf{ST}}
+\newcommand{\MT}{\mathsf{MT}}
+\newcommand{\tSI}{\mathsf{SI}}
+\newcommand{\SI}[3][]{\tSI_{#1}\,#2\,#3}
+\newcommand{\tSIs}{\mathsf{SIS}}
+\newcommand{\SIs}[3][]{\tSIs_{#1}\,#2\,#3}
+\newcommand{\Labels}{\mathsf{Labels}}
+\newcommand{\tLabel}{\mathsf{Label}}
+\newcommand{\Label}[2][]{\tLabel_{#1}\,{#2}}
+\newcommand{\tFC}{\mathsf{FC}}
+\newcommand{\FC}[3][]{\tFC_{#1}\,#2\,#3}
+\newcommand{\tlet}{\mathsf{let}}
+\newcommand{\tfix}{\mathsf{fix}}
+\newcommand{\texec}{\mathsf{exec}}
+\newcommand{\vfc}{\mathit{fc}}
+\newcommand{\tbranch}{\mathsf{branch}}
+\newcommand{\tgoto}{\mathsf{goto}}
+\newcommand{\Cmm}{\texttt{C--}\xspace}
+\newcommand{\JVMmm}{\texttt{JVM--}\xspace}
+
+
+
+
+
+
+
+
+
+\begin{document}
+
+\maketitle
+%\begin{frame}
+%  \titlepage
+%\end{frame}
+
+%\begin{frame}
+%  \frametitle{Outline}
+%  \tableofcontents
+%  % You might wish to add the option [pausesections]
+%\end{frame}
+
+
+% CompCert: Verified compilation of C
+% Verification should be integral part of teaching compilation
+% Full verification too expensive
+% Type-soundness
+
+
+
+\section{Introduction}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Verified Compilation}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item Tony Hoare's Grand Challenge: Verified compilation.
+  \item CompCert for the masses?
+% : First verified compiler for (subset of) C.
+%   \item CompCert should not remain singular effort!
+%   \item Can I teach verified compilation to my master students?
+  \item Full verification may be too expensive ($> 90\%$ of impl.\ effort).
+  \item Sweet spot: lots of confidence for little verification.
+%  \item Low-hanging fruits?
+  \item Compiler be a \alert{total} function.
+  \end{itemize}
+\end{frame}
+
+% \begin{frame}%[fragile=singleslide]
+%   \frametitle{Verified Compilation}
+%   \vspace{-3ex}
+%   \begin{itemize}
+%   \item Tony Hoare's Grand Challenge: Verified compilation.
+%   \item CompCert: First verified compiler for (subset of) C.
+%   \item CompCert should not remain singular effort!
+%   \item Can I teach verified compilation to my master students?
+%   \item Full verification may be too expensive ($> 90\%$ of impl.\ effort).
+%   \item Any low-hanging fruits?
+%   \end{itemize}
+% \end{frame}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Verifying Type-Safety}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item Robin Milner: \emph{Well-typed programs do not go wrong.}
+  \item Types checked by compiler front-end.
+  \item Goal: preserve properties through back-end.
+    \begin{itemize}
+    \item Type safety.
+    \item ``Execution safety'': No illegal jumps.
+    \end{itemize}
+  \item Typed machine language (e.g. LLVM).
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Method}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item Implement compiler in a dependently-typed programming
+    language.
+  \item Represent well-typed syntax as indexed data types.
+  % \item Dependent types enable representation of well-scoped and
+  %   well-typed syntax as indexed data types.
+  \item Type-correct compilation enforced by indexing discipline.
+%  \item Hope: Hard to write buggy yet type-preserving compiler.
+  \item Employ algebraic structures (categories, functors, ...)
+and algebraic presentations of graphs
+$\longrightarrow$ \emph{systems modelling}.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Intrinsically well-typed syntax}
+%  \vspace{-3ex}
+  \begin{center}
+  \begin{tabular}{|c|c|}%{|p30ex|p30ex|}
+\hline
+\textbf{object language} & \textbf{meta language} \\
+\hline
+%\vspace{1ex}
+untyped & simply typed \\
+\eg: syntax trees & \eg: (C, Java), Scala, ML, Haskell, \dots \\
+%%\vspace{1ex}
+\hline
+%\vspace{1ex}
+simply typed & dependently typed \\
+\eg: $\lambda$-calculus, \Cmm & \eg: Agda, Coq, Idris, Lean, \dots \\
+%%\vspace{1ex}
+\hline
+%\vspace{1ex}
+dependently typed & \alert{dependently typed} \\
+%%\vspace{1ex}
+\hline
+  \end{tabular}
+  \end{center}
+\end{frame}
+
+
+
+\section{Compiler for \Cmm}
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Pipeline}
+  \vspace{-3ex}
+  \begin{center}
+\(
+\xymatrix@R=6ex{
+\text{\Cmm text}
+\ar[d]^{\mybox{parser}}
+\\
+\text{abstract syntax}
+\ar[d]^{\mybox{type checker}}
+\\
+\text{\alert{well-typed syntax}}
+\ar[d]^{\text{\alert{code generator}}}
+\\
+\text{\alert{well-formed machine code}}
+\ar[d]^{\mybox{printer}}
+\\
+\text{\JVMmm symbolic assembler}
+}
+\)
+  \end{center}
+\end{frame}
+
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{\Cmm by example}
+  \vspace{-3ex}
+\begin{verbatim}
+// Does p divide q?
+bool divides (int p, int q) {
+  return (q / p) * p == q;
+}
+
+// Is p prime?
+bool prime (int p) {
+  if (p <= 2) return p == 2;
+  else {
+    int q = 3;
+    while (q * q <= p)
+      if (divides(q,p)) return false;
+      else q = q + 2;
+  }
+  return true;
+}
+
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{\Cmm language elements}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item Hierarchical:
+    \begin{itemize}
+    \item function defintions contain statements,
+    \item statements contain expressions.
+    \end{itemize}
+  \item Types: $\Ty = \{ \tint, \tdouble,  \tbool, \tvoid \}$.
+  \item Variables (function parameters, local variables) are \emph{scoped}.
+  \item Some statements declare new variables (\verb|int q = 3;|).
+  \item Control structures: \verb|if|, \verb|while|, \verb|return|.
+  \end{itemize}
+\end{frame}
+
+
+\section{Well-typed syntax}
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Typing contexts}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item Scoping is managed by \emph{typing contexts} $\Gamma$,
+    snoc-lists of types.
+  \item Example list $\tint^2 = [\tint,\tint]$:
+$$
+  \Ge.\tint.\tint
+$$
+\vspace{-2ex}
+  \item Category $\Cxt$:
+    \begin{itemize}
+    \item Objects: typing contexts $\Gamma$.
+    \item Morphisms $\GG \sublist \GD$ are ways in which $\GG$ is a
+      sublist of $\GD$.
+\[
+  \nru{\tskip}{\vas \sublist \vbs}{\vas \sublist (\vbs.b)}
+\qquad
+  \nru{\tkeep}{\vas \sublist \vbs}{(\vas.a) \sublist (\vbs.a)}
+\qquad
+  \nru{\tdone}{}{\Ge \sublist \Ge}
+\]
+    \end{itemize}
+  \item Variables (de Bruijn indexes) pick a type from a context.
+\[
+  \Var[t] \GG \cong ([t] \sublist \GG)
+\]
+\vspace{-2ex}
+  \item Quiz:
+    \begin{enumerate}
+    \item How many morphisms in $\tint^2 \sublist \tint^5$?
+    \item How many morphisms in $\tint^k \sublist \tint^n$?
+    \end{enumerate}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{$\Cxt$ has only weak push-outs}
+%  \vspace{-3ex}
+  \begin{center}
+\(
+\xymatrix@=7ex{
+  [] \ar[rr] \ar[dd] && [a] \ar[dd] \ar[dddr] \\
+  \\
+  [b] \ar[rr] \ar[drrr] && [a,b] \\
+  &&& [b,a] \\
+}
+\)
+  \end{center}
+\end{frame}
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Well-typed syntax}
+  \vspace{-3ex}
+% Type checker produces well-typed syntax from parse trees.
+  \begin{itemize}
+  \item $\Var[t]\Gamma$ variables of type $t$
+  \item $\Exp[t]\Gamma$ expressions of type $t$
+  \item $\Stm[\vrt]\Gamma{\Gamma'}$ statements
+    \begin{itemize}
+    \item $\vrt$: return type of function
+    \item $\Gamma$: context before statement
+    \item $\Gamma' = \Gamma.\Delta$: context after
+    \end{itemize}
+  \item $\Stms[\vrt]{\Gamma}{\Gamma'}$ statement sequences: free
+    category over $\tStm$.
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Expressions}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item $\tExp_t : \Cxt \to \Set$ functor
+  \item maps hom $\eta : \GG \sublist \GD$ to weakening
+    $[\eta] : \Exp[t]\GG \to \Exp[t]\GD$
+  \item constructors
+\[
+  \begin{array}{lcl@{~}c@{~}l}
+\tlit   & : & (v : \Val[t]) & \to & \Exp[t]\Gamma \\
+\tvar   & : & (x : \Var[t]\Gamma) & \to & \Exp[t]\Gamma \\
+\tarith & : & (\vop : \ArithOp t)\ (e_1\;e_2 : \Exp[t]\Gamma) & \to &
+              \Exp[t]\Gamma \\
+% \tarith & : & (\vop : \ArithOp a)\ (e_1\;e_2 : \Exp[a]\Gamma) & \to &
+%               \Exp[a]\Gamma \\
+\tcmp   & : & (\vop : \CmpOp t)\ (e_1\;e_2 : \Exp[t]\Gamma) & \to &
+              \Exp[\tbool]\Gamma \\
+  \end{array}
+\]
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Statements}
+  \vspace{-3ex}
+%  \begin{itemize}
+%  \item constructors of $\Stm[\vrt]{\Gamma}{\Gamma'}$
+\[
+\begin{array}{@{}l@{~}c@{~}l@{~}c@{~}l}
+  \tassign & : & (x : \Var[t]\Gamma)\ (e : \Exp[t]\Gamma) & \to & \Stm[\vrt]\Gamma\Gamma \\
+  \tdecl   & : & (t : \Ty) & \to & \Stm[\vrt]\Gamma{(\Gamma.t)} \\
+  \treturn & : & (e : \Exp[\vrt]\Gamma) & \to & \Stm[\vrt]\Gamma\Gamma \\
+  \twhile & : & (e : \Exp[\tbool]\Gamma)\
+                 (s : \Stm[\vrt]\Gamma{\Gamma'}) & \to & \Stm[\vrt]\Gamma\Gamma \\
+  \tif    & : & (e : \Exp[\tbool]\Gamma)\
+                 (s_1 : \Stm[\vrt]\Gamma{\Gamma_1})\
+                 (s_2 : \Stm[\vrt]\Gamma{\Gamma_2}) & \to & \Stm[\vrt]\Gamma\Gamma \\
+\end{array}
+\]
+%  \end{itemize}
+\end{frame}
+
+
+\section{Well-formed machine code}
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Java Virtual Machine (JVM)}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item no registers
+  \item stack for evaluating expressions
+  \item local variable store (incl. function parameters)
+  \item (heap for objects)
+  \item method call handling behind the scenes
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]%=singleslide]
+  \frametitle{Java Virtual Machine (JVM) example}
+  \vspace{-1ex}
+  \begin{tabular}{l@{\qquad}l}
+  \Cmm & Jasmin (symbolic JVM) \\
+\hline
+\\[-1ex]
+    \begin{minipage}[t]{0.3\linewidth}
+\begin{verbatim}
+bool divides
+   (int p, int q)
+{
+  return
+  (q / p) * p == q;
+}
+\end{verbatim}
+    \end{minipage}
+& % translates to Jasmin (symbolic JVM) code:
+  \begin{minipage}[t]{0.5\linewidth}
+\begin{verbatim}
+.method divides(II)I
+        iload_1           ;; q
+        iload_0           ;; p
+        idiv
+        iload_0           ;; p
+        imul
+
+        iload_1           ;; q
+        if_icmpeq L_true
+        iconst_0          ;; false
+        goto L_done
+L_true: iconst_1          ;; true
+L_done: ireturn
+.end method
+\end{verbatim}
+  \end{minipage}
+  \end{tabular}
+\end{frame}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Evaluation Stack}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item JVM has local stack for evaluation of expressions.
+  \item Stack type $\ST = \List\,\Ty$
+  \item Stack instruction $\SI[\Gamma]\Phi{\Phi'}$
+    \begin{itemize}
+    \item $\Gamma : \Cxt$ local variable store typing
+    \item $\Phi   : \ST$ stack typing before instruction
+    \item $\Phi'  : \ST$ stack typing after
+    \end{itemize}
+  \item Constructors:
+\[
+\begin{array}{lcl@{~}c@{~}l@{}l}
+  \tldc & : & (i : \Val[\tint]\Gamma) & \to & \SI[\Gamma]\Phi{&(\Phi.\tint)} \\
+  \tload & : & (x : \Var[t]\Gamma) & \to & \SI[\Gamma]\Phi{&(\Phi.t)} \\
+  \tstore & : & (x : \Var[t]\Gamma) & \to & \SI[\Gamma]{(\Phi.t)}{&\Phi} \\
+  \tarith & : & (\vop : \ArithOp t) & \to & \SI[\Gamma]{(\Phi.t.t)}{&(\Phi.t)}
+\end{array}
+\]
+  \item Instruction sequences $\SIs[\Gamma]\Phi{\Phi'}$: free category over $\tSI_\Gamma$.
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Variable typing administration}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item Variable declarations $\tdecl\,t : \Stm \Gamma {(\Gamma.t)}$ are NOPs.
+%  \item Only needed for typing.
+  \item Needed in intrinsically typed machine language.
+\[
+  \tdecl\,t : {(\Gamma,\Phi)} \to {(\Gamma.t,\Phi)}
+\]
+\vspace{-2ex}
+  \item Reconstruction in actual JVM by static analysis (bytecode verifier).
+  \item Machine type $\MT = \Cxt \times \ST$.
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{Jumps can go wrong}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item Bad jump:
+\begin{verbatim}
+                          ;; Stack modification:
+        if_icmpeq L_true  ;; [int,int] -> []
+        iconst_0          ;; []        -> [int]
+L_true: istore_3          ;; [int]     -> []
+
+\end{verbatim}
+  \item Jump target needs to have same stack typing as source.
+  \item Same for variable typing.
+  \item Labels are typed by ``before'' machine type $\Xi$ of target.
+  \item Label context $\Labels = \List\,\MT$.
+  \item A label is a de Bruijn index $\ell : \Label[\Xi] \GL$.
+\[
+  \Label[\Xi] \GL \cong ([\Xi] \sublist \GL)
+\]
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{Jump targets need to exist}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item Semantics of a label is the code following it.
+  \item Each label needs to point to some code.
+  \item Two types of labels:
+    \begin{itemize}
+    \item \emph{Join points} for branches of $\tif$ are $\tlet$s.
+% \begin{verbatim}
+% [[ if (e) s1; else s2; s ]] =
+%   let l  = [[s]]
+%       l1 = [[s1]]; goto l
+%       l2 = [[s2]]; goto l
+%   in  [[e]]; branch l1 l2
+% \end{verbatim}
+    \item \emph{Back jumps} to repeat body of $\twhile$ are $\tfix$s.
+% \begin{verbatim}
+% [[ while (e) s0; s ]] =
+%   let l2 = [[s]]
+%   in  fix l.
+%         let l1 = [[s0]]; goto l
+%         in  [[e]]; branch l1 l2
+% \end{verbatim}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{Join points: let}
+\begin{verbatim}
+[[ if (e) s1; else s2; s ]] =
+
+  let l  = [[s]]
+      l1 = [[s1]]; goto l
+      l2 = [[s2]]; goto l
+  in  [[e]]; branch l1 l2
+\end{verbatim}
+\end{frame}
+
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{Back jumps: fix}
+\begin{verbatim}
+[[ while (e) s0; s ]] =
+
+  let l2 = [[s]]
+  in  fix l.
+        let l1 = [[s0]]; goto l
+        in  [[e]]; branch l1 l2
+\end{verbatim}
+\end{frame}
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Flowchart (control flow graph)}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item $\FC[\vrt] \Xi \GL$ control flow graph
+    \begin{itemize}
+    \item $\vrt$ return type of method
+    \item $\Xi$ machine state on entry
+    \item $\GL$ typed jump targets
+    \end{itemize}
+  \item Constructors:
+\[
+\begin{array}{lcl@{}l@{~}c@{~}l@{}l}
+  \texec   & : & (i : \SI[\Gamma] \Phi {\Phi'})\ & (\vfc : \FC[\vrt] {(\Gamma,\Phi')} \GL)
+                 & \to & \FC[\vrt] {(\Gamma,\Phi)} {&\GL} \\
+  \tdecl   & : & (t : \Ty)\ & (\vfc : \FC[\vrt] {(\Gamma.t,\Ge)} \GL) & \to & \FC[\vrt] {(\Gamma,\Ge)} {&\GL} \\
+  % \tdecl   & : & (t : \Ty)\ & (\vfc : \FC[\vrt] {(\Gamma.t,\Phi)} \GL) & \to & \FC[\vrt] {(\Gamma,\Phi)} {&\GL} \\
+  \treturn & : & (e : \Exp[\vrt] \Gamma) & & \to & \FC[\vrt] {(\Gamma,\Ge)} {&\GL} \\
+  \tgoto   & : & (\ell : \Label[\Xi]\Gamma) & & \to & \FC[\vrt] \Xi {&\GL} \\
+  \tbranch & : & (\vop : \CmpOp t) \ & (\vfc_1\;\vfc_2 : \FC[\vrt] {(\Gamma,\Phi)} \GL) & \to & \FC[\vrt] {(\Gamma,\Phi.t.t)} {&\GL} \\
+  \tlet    & : & (\vfc' : \FC[\vrt] {\Xi'} \GL)\ & (\vfc : \FC[\vrt] \Xi {(\GL.\Xi')}) & \to & \FC[\vrt] \Xi {&\GL} \\
+  \tfix    & : & & (\vfc : \FC[\vrt] \Xi {(\GL.\Xi)}) & \to & \FC[\vrt] \Xi {&\GL} \\
+\end{array}
+\]
+  \end{itemize}
+\end{frame}
+
+
+\section{Wrapping up}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Back end}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item Code generation: translation from well-typed syntax to flow chart using continuations.
+  \item Linearization: from flowcharts to basic blocks.
+  \item Printing: from basic blocks to Jasmin symbolic JVM.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Evaluation}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item \emph{When it type-checks, it works.}
+  \item Had only 3 bugs in compiler on first run!
+  \item Agda programming requires hard thinking ahead.
+  \item Little proof effort.
+  \item Too hard for average beginning master student.
+%  \item Agda not yet for the masses.
+%  \item Fine for a master thesis (Alexander Fuhs).
+  \item Full verification in progress:
+    \begin{itemize}
+    \item Needs reasoning in sublist-category.
+    \item Contributed categorical constructions (e.g. weak pushout) to Agda standard library.
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+
+% \begin{frame}%[fragile=singleslide]
+%   \frametitle{}
+%   \vspace{-3ex}
+%   \begin{itemize}
+%   \item
+%   \end{itemize}
+% \end{frame}
+
+
+% \begin{frame}[fragile=singleslide]
+%   \frametitle{Conclusions}
+%   \vspace{-3ex}
+%   \begin{itemize}
+%   \item
+%   \end{itemize}
+% \end{frame}
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{Related Work}
+  %\vspace{-3ex}
+  \begin{itemize}
+  \item Andrew Appell, Modern compiler implementation in C/Java/ML
+  \item Xavier Leroy et al., CompCert, in Coq
+  \item Magnus Myreen et al., CakeML, in HOL
+  \item Alberto Pardo, Emmanuel Gunter, Miguel Pagano, Marcos Viera,
+\emph{An Internalist Approach to Correct-by-Construction Compilers},  PPDP'18:
+Terms indexed by semantics (in Agda)
+  \item DeepSpec project: Verified tool chain.
+  \end{itemize}
+\end{frame}
+
+
+% \begin{frame}%[fragile=singleslide]
+%   \frametitle{Future work}
+%   %\vspace{-3ex}
+%   \begin{itemize}
+%   \item
+%   \end{itemize}
+% \end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% END DOC %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \bibliography{short}
+
+\end{document}
+
+
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}%[fragile=singleslide]
+  \frametitle{}
+  \vspace{-3ex}
+  \begin{itemize}
+  \item
+  \end{itemize}
+\end{frame}
+
+\end{document}
+
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

@@ -1,0 +1,546 @@
+\RequirePackage{ifthen}
+%% NOT FOUND: \RequirePackage{mnsymbol} % \dotminus
+%\RequirePackage{amssymb}
+%\RequirePackage{amsfonts}
+\RequirePackage{stmaryrd} % \shortuparrow
+\RequirePackage{amssymb}
+
+% evergreens
+\newcommand{\bla}{\ensuremath{\mbox{$$}}} % invisible, but not ignored
+\newcommand{\Fpure}{\ensuremath{\mathsf{F}}}
+\newcommand{\Fomega}{\ensuremath{\mathsf{F}^\omega}}
+\newcommand{\der}{\,\vdash}
+\newcommand{\derP}{\der}%^+}
+\newcommand{\of}{\!:\!}
+\newcommand{\is}{\!=\!}
+\newcommand{\sub}{\!\leq\!}
+\newcommand{\red}{\longrightarrow}
+\newcommand{\cored}{\longleftarrow}
+\newcommand{\coredp}{\mathop{{}^+{\longleftarrow}}\nolimits}
+\newcommand{\redbeta}{\red_\beta}
+\newcommand{\redbetastar}{\red_\beta^*}
+\newcommand{\coredbetastar}{\mathrel{\bla_\beta^*{\longleftarrow}}}
+\newcommand{\redeta}{\red_\eta}
+\newcommand{\expeta}{\red_{\eta^-}}
+%\newcommand{\redbeta}{\mathrel{\red_\beta}}
+%\newcommand{\redeta}{\mathrel{\red_\eta}}
+%\newcommand{\coredeta}{\longleftarrow_\eta}
+\newcommand{\redetastar}{\red_\eta^*}
+\newcommand{\coredetastar}{\mathrel{\bla_\eta^*{\longleftarrow}}}
+\newcommand{\redbetaeta}{\red_{\beta\eta}}
+\newcommand{\redbetaetastar}{\red_{\beta\eta}^*}
+\newcommand{\redw}{\mathrel{\red_{\mathsf{w}}}}
+\newcommand{\whd}{\searrow} % for algorithmic equality
+\newcommand{\rk}{\mathop{\mathsf{rk}}\nolimits}
+\newcommand{\restrict}{\upharpoonright}
+\newcommand{\isdef}{\downharpoonright}
+\newcommand{\FV}{\ensuremath{\mathsf{FV}}}
+\newcommand{\arity}{\ensuremath{\mathsf{ar}}}
+%\newcommand{\otto}{\leftrightarrow} %contained in nath.sty
+\newcommand{\To}{\Rightarrow}
+\newcommand{\Pot}{\mathcal{P}}
+\newcommand{\dom}[1]{\mathsf{dom}(#1)}
+\newcommand{\rng}{\mathop{\mathsf{rng}}\nolimits}
+\newcommand{\pto}{\rightharpoonup} % partial map
+\newcommand{\perto}{\stackrel{\mathsf{p}}\rightharpoonup} % partial coherent map
+\newcommand{\pertot}{\stackrel{\mathsf{p}}\to} % coherent map
+\newcommand{\kto}{\stackrel{\mathsf{K}}\rightharpoonup} % partial Kripke map
+\newcommand{\NN}{\mathbb{N}}
+\newcommand{\defas}{\mathrel{\ :\Longleftrightarrow\ }}
+\newcommand{\defiff}{\mathrel{:\Longleftrightarrow}}
+\newcommand{\substo}{\!\mapsto\!}
+\newcommand{\mapstot}{\mathrel{\dot\mapsto}}
+\newcommand{\condeq}{\doteq}
+\newcommand{\aeq}{=_\alpha}
+\newcommand{\beq}{=_{\beta}}
+\newcommand{\beeq}{=_{\beta\eta}}
+\newcommand{\enc}[1]{\ulcorner#1\urcorner}
+%% for palatino
+%\def\lv{\mathopen{[\kern-0.2em[}}    % opening [[ value delimiter
+%\def\rv{\mathclose{]\kern-0.2em]}}   % closing ]] value delimiter
+% for computer modern
+\def\lv{\mathopen{{[\kern-0.14em[}}}    % opening [[ value delimiter
+\def\rv{\mathclose{{]\kern-0.14em]}}}   % closing ]] value delimiter
+\newcommand{\den}[1]{\lv #1 \rv}
+\newcommand{\Den}[2]{\den{#1}_{#2}}
+\newcommand{\dent}[2]{\llparenthesis#1\rrparenthesis_{#2}}
+\newcommand{\denty}[1]{\llparenthesis#1\rrparenthesis}
+  % banana brackets, need stmaryrd.sty
+% for computer modern
+% den in superscript
+\newcommand{\dens}[1]{\mathopen{[\kern-0.3ex[}#1\mathclose{]\kern-0.3ex]}}
+% kind interp.
+\newcommand{\denk}[2]{\mathopen{\{\kern-0.3ex|}#1\mathclose{|\kern-0.3ex\}}_{#2}}
+\newcommand{\length}[1]{\|#1\|}
+
+% von Buchholz
+\def\tox#1{\buildrel#1\over\to}
+\def\ltox#1{\buildrel\raise1pt\hbox{$\scriptstyle#1$}\over\longrightarrow}
+\def\toid{\tox{\scriptscriptstyle\rm id}}
+
+\def\tocolow{\buildrel\raise-5pt\hbox{$\scriptscriptstyle+$}\over\rightarrow}
+
+% \dotminus from http://tex.stackexchange.com/questions/114188/special-character-dot-over-dash
+\makeatletter
+\newcommand{\dotminus}{\mathbin{\text{\@dotminus}}}
+\newcommand{\@dotminus}{%
+  \ooalign{\hidewidth\raise1ex\hbox{.}\hidewidth\cr$\m@th-$\cr}%
+}
+\makeatother
+
+% type equality
+\def\lo{\mathopen{{\lceil\kern-0.25em\lceil}}}
+\def\ro{\mathclose{{\rfloor\kern-0.25em\rfloor}}}
+\newcommand{\ten}[1]{\lo#1\ro}
+\newcommand{\Ten}[2]{\lo#1\ro_{#2}}
+%\newcommand{\Tef}[2]{[#1]_{#2}}
+\newcommand{\Tef}[2]{#1#2 \in \TYPE}
+\newcommand{\Teq}[4]{#1#2 = #3#4 \in \TYPE}
+%\newcommand{\Teq}[4]{\Tef{#1}{#2} = \Tef{#3}{#4}}
+
+% latin etc. abbrev
+\newcommand{\abbrev}[1]{#1} % alternative: \emph{#1}
+\newcommand{\cf}{\abbrev{cf.}\ }
+\newcommand{\eg}{\abbrev{e.\,g.}}
+\newcommand{\Eg}{\abbrev{E.\,g.}}
+\newcommand{\ie}{\abbrev{i.\,e.}}
+\newcommand{\Ie}{\abbrev{I.\,e.}}
+\newcommand{\etal}{\abbrev{et.\,al.}}
+\newcommand{\wwlog}{w.\,l.\,o.\,g.} % \wlog is ``write into log file''
+\newcommand{\Wlog}{W.\,l.\,o.\,g.}
+\newcommand{\wrt}{w.\,r.\,t.}
+
+% paragraphs
+\newcommand{\para}[1]{\paragraph*{\it#1}}
+\newcommand{\paradot}[1]{\para{#1.}}
+
+% proof by cases
+\newenvironment{caselist}{%
+  \begin{list}{{\it Case}}{%
+    %\setlength{\topsep}{2ex}% DOES NOT SEEM TO WORK
+    %\setlength{\itemsep}{2ex}%
+    %\setlength{\itemindent}{-2ex}%
+  }%
+}{\end{list}%
+}
+\newenvironment{subcaselist}{%
+  \begin{list}{{\it Subcase}}{}%
+}{\end{list}%
+}
+\newenvironment{subsubcaselist}{%
+  \begin{list}{{\it Subsubcase}}{}%
+}{\end{list}%
+}
+
+\newcommand{\nextcase}{\item~}
+
+% meta-level logic
+\newcommand{\mfor}{\ \mbox{for}\ }
+\newcommand{\mforsome}{\ \mbox{for some}\ }
+\newcommand{\mthen}{\ \mbox{then}\ }
+\newcommand{\mif}{\ \mbox{if}\ }
+\newcommand{\miff}{\ \mbox{iff}\ }
+\newcommand{\motherwise}{\ \mbox{otherwise}}
+\newcommand{\mundefined}{\mbox{undefined}}
+\newcommand{\mnot}{\mbox{not}\ }
+\newcommand{\mand}{\ \mbox{and}\ }
+\newcommand{\mor}{\ \mbox{or}\ }
+\newcommand{\mimplies}{\ \mbox{implies}\ }
+\newcommand{\mimply}{\ \mbox{imply}\ }
+\newcommand{\mforall}{\ \mbox{for all}\ }
+\newcommand{\mexists}{\mbox{exists}\ }
+\newcommand{\mexist}{\mbox{exist}\ }
+\newcommand{\mtrue}{\mbox{true}}
+\newcommand{\mwith}{\ \mbox{with}\ }
+\newcommand{\mwhere}{\ \mbox{where}\ }
+\newcommand{\mholds}{\ \mbox{holds}\ }
+\newcommand{\munless}{\ \mbox{unless}\ }
+\newcommand{\mboth}{\ \mbox{both}\ }
+\newcommand{\msuchthat}{\ \mbox{such that}\ }
+% proofs
+\newcommand{\msince}{\mbox{since}\ }
+\newcommand{\mdef}{\mbox{by def.}}
+\newcommand{\mass}{\mbox{assumption}}
+\newcommand{\mhyp}{\mbox{by hyp.}}
+\newcommand{\mlemma}[1]{\mbox{by Lemma~#1}}
+\newcommand{\mih}[1][]{\mbox{by ind.hyp.}#1}
+\newcommand{\mgoal}[1][]{\mbox{goal\ifthenelse{\equal{#1}{}}{}{~#1}}}
+\newcommand{\mby}[1]{\mbox{by #1}}
+\newcommand{\minfrule}{\mbox{by inference rule}}
+
+
+% Inference rules
+\newcommand{\rulename}[1]{\ensuremath{\mbox{\sc#1}}}
+\newcommand{\rul}[2]{\dfrac{\begin{array}[b]{@{}l@{}} #1 \end{array}}{#2}}
+\newcommand{\ru}[2]{\dfrac{\begin{array}[b]{@{}c@{}} #1 \end{array}}{#2}}
+\newcommand{\rux}[3]{\ru{#1}{#2}\ #3}
+\newcommand{\noru}[3]{\ru{#2}{#3}}
+\newcommand{\nru}[3]{#1\ \ru{#2}{#3}}
+\newcommand{\nrux}[4]{#1\ \ru{#2}{#3}\ #4}
+\newcommand{\dstack}[2]{\begin{array}[b]{c}#1\\#2\end{array}}
+\newcommand{\ndru}[4]{#1\ \ru{\dstack{#2}{#3}}{#4}}
+\newcommand{\ndrux}[5]{#1\ \ru{\dstack{#2}{#3}}{#4}\ #5}
+\newcommand{\lcol}[1]{\multicolumn{1}{@{}l@{}}{{#1}}}
+\newcommand{\rcol}[1]{\multicolumn{1}{@{}r@{}}{{#1}}}
+
+% Substitution and function update
+% read ``\subst F X A'' as ``substitute F for X in A''
+%\newcommand{\subst}[3]{#3[#2 := #1]}
+%\newcommand{\subst}[3]{[#1/#2]#3}
+\newcommand{\subst}[3]{#3[#1/#2]}
+% read ``\update \theta X \G'' as update \theta at point X by \G
+\newcommand{\update}[3]{#1[#2 \mapsto #3]}
+%\newcommand{\update}[3]{#1,#2 \is #3}
+
+
+% %% ---------- %< ----------
+% \DeclareRobustCommand*{\MakeCapital}[1]{%
+% \begingroup
+% \def\i{I}\def\j{J}%
+% \def\do##1##2{\let##1##2\do}%
+% \expandafter\do\@uclclist\relax{\relax\@gobble}%
+% \let\protect\@gobble
+% \def\do##1{\def##1####1{{\protect##1####1}}\do}%
+% \expandafter\do\@caplist\do\relax
+% \let\protect\noexpand
+% \def\t##1##2{{\protect\t##1##2}}%
+% \def\IeC##1{{\protect##1}}% -> inputenc
+% \def\@tabacckludge##1##2{{% -> inputenc
+% \expandafter\protect\csname\string##1\endcsname##2}}%
+% \ifnum\catcode`\"=\active % -> babel
+% \lccode`\~=`\"%
+% \lowercase{\def~##1{{\protect\"##1}}}%
+% \fi
+% \edef\@tempa{#1}%
+% \expandafter\endgroup
+% \expandafter\@capitalize\@tempa}
+
+% \def\@caplist{\"\`\^\~\"\=\.\H\b\c\d\r\u\v}
+% \def\@capitalize#1{\uppercase{#1}}
+% %% ---------- %< ----------
+
+\newcommand{\evalsto}{\searrow}
+
+\newcommand{\funS}[2]{(#1 : #2) \to}
+\newcommand{\allS}[2]{\forall #1 : #2.}
+\newcommand{\sigT}[2]{\Sigma #1 \of #2.\,}
+\newcommand{\funT}[2]{(#1 \of #2) \to}
+\newcommand{\sfunT}[2]{(#1 : #2) \to}
+\newcommand{\allT}[2]{\forall #1 \of #2. \,}
+%\newcommand{\allT}[2]{[#1 \of #2] \to}
+
+\newcommand{\knet}[3]{\kne{#1,#2 \reifiesto #3}}
+\newcommand{\knft}[3]{\knf{#1,#2 \reifiesto #3}}
+%\newcommand{\Rbase}[5]{#1 : #2 \reifiesto #3 \der #4 : #5}
+%\newcommand{\Rne}[4]{#1 \der #2 \reifiesto #3 : #4}
+
+% macros for composing syntax
+\newcommand{\sarr}[3]{\tycol{#2} \tox{\qcol{#1}} \tycol{#3}}
+\newcommand{\arr}[3]{#2 \tox{#1} #3}
+%\newcommand{\arr}[3]{#2 \mathrel{{}^{#1}{\to}} #3}
+\newcommand{\PiT}[4]{\Pi^{#1,#2}#3\,#4}
+\newcommand{\FunT}[3]{\Fun\,#2\,\lambda#1 #3}%{\Fun\,#2\,(\lambda#1.#3)}
+\newcommand{\FunV}[2]{\Fun\,#1\,#2}
+\newcommand{\succT}[1]{\ts\,#1}
+\newcommand{\recT}[1][]{\trec\,(#1)} %{\trec_{#1}}
+\newcommand{\RecT}[1][]{\Rec\,(#1)} %{\Rec_{#1}}
+\newcommand{\lam}[1]{\lambda^{#1}\,}
+\newcommand{\nlam}[2]{\lambda^{#2} #1.\,}
+\newcommand{\snlam}[2]{\lambda^{\qcol{#2}}\varcol{#1}.\,}
+%\newcommand{\nlam}[2]{\lambda #1^{#2}.\,}
+\newcommand{\lamdot}[1]{\lambda^{#1}.\,}
+
+\newcommand{\tif}{\mathsf{if}}
+\newcommand{\tifzero}{\tmc{ifzero}}
+\newcommand{\tthen}{\tmc{then}}
+\newcommand{\telse}{\tmc{else}}
+\newcommand{\tifthenelse}[3]{\tif\,#1\,\tthen\,#2\,\telse\,#3}
+\newcommand{\ifzero}[3]{\tifzero\,#1\,\tthen\,#2\,\telse\,#3}
+%\newcommand{\tifthenelse}[3]{\tif\;#1\;\tthen\;#2\;\telse\;#3}
+
+% syntactic classes
+\newcommand{\Quant}{\mathsf{Quant}}
+\newcommand{\Sort}{\mathsf{Sort}}
+\newcommand{\tkind}{\Box}
+\newcommand{\Base}{\mathsf{Base}}
+\newcommand{\Ty}{\mathsf{Ty}}
+\newcommand{\Ann}{\mathsf{Ann}}
+\newcommand{\LamII}{\Lambda^{\downarrow\uparrow}}
+\newcommand{\Kind}{\mathsf{Kind}}
+\newcommand{\Ki}{\mathsf{Ki}}
+\newcommand{\Constr}{\mathsf{Constr}}
+\newcommand{\Obj}{\mathsf{Obj}}
+\newcommand{\Elim}{\mathsf{Elim}}
+\newcommand{\Atom}{\mathsf{Atom}}
+\newcommand{\Const}{\mathsf{Const}}
+\newcommand{\Proj}{\mathsf{Proj}}
+\newcommand{\Par}{\mathsf{Par}}
+\newcommand{\Clos}{\mathsf{Clos}}
+\newcommand{\Cxt}{\mathsf{Cxt}}
+\newcommand{\WCxt}{\mathsf{WCxt}}
+\newcommand{\WNe}{\mathsf{WNe}}
+\newcommand{\Wne}{\mathsf{Wne}}
+\newcommand{\Whnf}{\mathsf{Whnf}}
+\newcommand{\Wbase}{\mathsf{Wbase}}
+\newcommand{\WVal}{\mathsf{WVal}}
+\newcommand{\WFun}{\mathsf{WFun}}
+\newcommand{\WPair}{\mathsf{WPair}}
+\newcommand{\WElim}{\mathsf{WElim}}
+\newcommand{\Env}{\mathsf{Env}}
+\newcommand{\tTm}{\mathsf{Tm}}
+\newcommand{\BVar}{\mathsf{BVar}}
+\newcommand{\FVar}{\mathsf{FVar}}
+\newcommand{\tNe}{\mathsf{Ne}}
+\newcommand{\Ne}[2]{\tNe\;#1\;#2}
+\newcommand{\NeExp}{\mathsf{NeExp}}
+\newcommand{\Null}{\emptyset}
+\newcommand{\Unit}{()}
+\newcommand{\tNf}{\mathsf{Nf}}
+\newcommand{\Neut}{\mathsf{Neut}}
+\newcommand{\Norm}{\mathsf{Norm}}
+\newcommand{\VNe}{\mathsf{VNe}}
+\newcommand{\VFun}{\mathsf{VFun}}
+\newcommand{\VPair}{\mathsf{VPair}}
+\newcommand{\FVal}{\mathsf{FVal}}
+\newcommand{\PVal}{\mathsf{PVal}}
+\newcommand{\GVal}{\mathsf{GVal}}
+\newcommand{\tfst}{\mathsf{fst}}
+\newcommand{\tsnd}{\mathsf{snd}}
+\newcommand{\tS}{\mathsf{S}}
+\newcommand{\tK}{\mathsf{K}}
+\newcommand{\tI}{\mathsf{I}}
+
+% Greek
+\newcommand{\Ge}{\ensuremath{\varepsilon}}
+\newcommand{\GG}{\ensuremath{\Gamma}}
+\newcommand{\GD}{\ensuremath{\Delta}}
+\newcommand{\GL}{\ensuremath{\Lambda}}
+
+
+
+
+% inference and checking
+\newcommand{\jne}{\Downarrow}
+\newcommand{\jnf}{\Uparrow}
+%\newcommand{\jinf}{\Downarrow}
+%\newcommand{\jchk}{\Uparrow}
+\newcommand{\jinf}{\rightrightarrows}
+\newcommand{\jchk}{\leftleftarrows}
+%\newcommand{\jinf}{\mathrel{\mathord{:}\mathord{\Rightarrow}}}
+%\newcommand{\jchk}{\mathrel{\mathord{:}\mathord{\Leftarrow}}}
+\newcommand{\ders}{\der_\mathsf{s}}
+
+
+% per model
+\newcommand{\perpref}{per-}
+\newcommand{\rper}[1]{\rulename{\perpref{}#1}}
+
+% % projections
+% \newcommand{\tL}{\mathsf{L}}
+% \newcommand{\tR}{\mathsf{R}}
+
+% % saturation interval
+% \renewcommand{\N}{\mathcal{N}}
+% \newcommand{\Sfun}{\mathcal{S}_{\mathit{fun}}}
+% \newcommand{\Spair}{\mathcal{S}_{\mathit{pair}}}
+
+
+% identitys
+%\newcommand{\tid}{\mathsf{i\kern-0.1ex d}} % not such a good idea
+\newcommand{\tid}{\mathsf{id}}
+\newcommand{\tId}{\mathsf{Id}}
+% identity substitution
+%\newcommand{\sid}{\sigma_{\tid}}
+
+% contexts
+%\newcommand{\cempty}{\mathord{\triangledown}}
+%\newcommand{\cempty}{\mathord{\diamond}}
+%\newcommand{\cempty}{()}
+\newcommand{\cempty}{\emptyset}
+\newcommand{\cxt}{\ \mathsf{cxt}}
+
+% calligraphic capital letters
+\newcommand{\A}{\tycol{A}}
+\newcommand{\B}{\tycol{B}}
+%\newcommand{\C}{\mathcal{C}}
+\newcommand{\DD}{\mathcal{D}}
+\newcommand{\E}{\mathcal{E}}
+\newcommand{\F}{\mathcal{F}}
+%\newcommand{\G}{\mathcal{G}}
+\renewcommand{\P}{\mathcal{P}}
+
+% universes (semantically)
+\newcommand{\UU}{\mathcal{U}}
+\newcommand{\TT}{\TYPE}%{\mathcal{T}}
+
+% term model
+\newcommand{\betaeq}{=_\beta}
+\newcommand{\etaeq}{=_\eta}
+
+\newcommand{\tleft}{\mathsf{left}}
+\newcommand{\tright}{\mathsf{right}}
+
+% misc stuff
+\newcommand{\sat}{\mathop{\mathsf{sat}}\nolimits}
+\newcommand{\SN}{\mathsf{SN}}
+\newcommand{\WN}{\mathsf{WN}}
+\newcommand{\TmVar}{\mathsf{TmVar}}
+\newcommand{\TyVar}{\mathsf{TyVar}}
+\newcommand{\Subst}{\mathsf{Subst}}
+\newcommand{\Eq}{\mathsf{Eq}} % for talkProgLog
+\newcommand{\List}{\mathsf{List}}
+\newcommand{\UList}{\mathsf{UList}}
+\newcommand{\tappend}{\mathsf{append}}
+\newcommand{\tvcons}{\mathsf{vcons}}
+\newcommand{\tvnil}{\mathsf{vnil}}
+\newcommand{\vxs}{\mathit{xs}}
+\newcommand{\vys}{\mathit{ys}}
+\newcommand{\vzs}{\mathit{zs}}
+\newcommand{\vas}{\mathit{as}}
+\newcommand{\vbs}{\mathit{bs}}
+\newcommand{\vcs}{\mathit{cs}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% SemEq stuff %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% \renewcommand{\update}[3]{(#1,#2 \is #3)}
+% \renewcommand{\subst}[3]{#3(\sid,#2 \is #1)}
+
+% \renewcommand{\Den}[2]{#1 #2}
+% \renewcommand{\den}[1]{#1\rid}
+
+\newcommand{\comp}{\circ}
+
+% de Bruijn index
+\newcommand{\ind}[1]{\mathsf{v}_{#1}}
+% de Bruijn level
+\newcommand{\lev}[1]{\x_{#1}}
+\newcommand{\var}[1]{\x_{#1}}
+\newcommand{\xdel}[1][]{\ifthenelse{\equal{#1}{}}{\x_\Delta}{\x_{\Delta+#1}}}
+
+\newcommand{\Bool}{\mathsf{Bool}}
+\newcommand{\ttrue}{\mathsf{true}}
+\newcommand{\tfalse}{\mathsf{false}}
+
+
+% tables and figures
+% deftable, deffigure, figureone, figuretwo, figuretwosqueeze
+
+%Tables
+\newenvironment{deftable}[2]{%
+  \def\deftablecaption{#2}%
+  \begin{table}[htbp]%
+  \begin{center}%
+  \begin{scriptsize}%
+  \begin{minipage}{#1}%
+  \hrule \vspace*{4ex}%
+%  % reassign dimensions for prooftrees
+%  \proofrulebaseline=2ex%
+%  \proofrulebreadth=.05em%
+%  \proofdotseparation=1.25ex%
+}{%
+\vspace{2ex} \hrule%
+\addvspace{2ex}%
+  \end{minipage}%
+  \end{scriptsize}%
+  \end{center}%
+  \caption{\deftablecaption}%
+  \end{table}%
+}
+
+%Figures
+\newenvironment{deffigure}[2]{%
+  \def\deffigurecaption{#2}%
+  \begin{figure*}[htbp]%
+  \begin{center}%
+  %\begin{scriptsize}%
+  \begin{minipage}{#1}%
+  \hrule \vspace*{4ex}%
+%  % reassign dimensions for prooftrees
+%  \proofrulebaseline=2ex%
+%  \proofrulebreadth=.05em%
+%  \proofdotseparation=1.25ex%
+}{%
+\vspace{2ex} \hrule%
+\addvspace{2ex}%
+  \end{minipage}%
+  %\end{scriptsize}%
+  \end{center}%
+  \caption{\deffigurecaption}%
+  \end{figure*}%
+}
+
+\newenvironment{figureone}[1]{%
+  \def\deffigurecaption{#1}%
+  \begin{figure}[htbp]%
+  \begin{center}%
+  %\begin{scriptsize}%
+  \begin{minipage}{\columnwidth}%
+  \hrule \vspace*{2ex}%
+  % reassign dimensions for prooftrees
+  \proofrulebaseline=2ex%
+  \proofrulebreadth=.05em%
+  \proofdotseparation=1.25ex%
+}{%
+\vspace{2ex} \hrule%
+%\addvspace{2ex}%
+  \end{minipage}%
+  %\end{scriptsize}%
+  \end{center}%
+  \caption{\deffigurecaption}%
+  \end{figure}%
+}
+
+\newenvironment{figuretwo}[1]{%
+  \def\deffigurecaption{#1}%
+  \begin{figure*}[htbp]%
+  \begin{center}%
+  %\begin{scriptsize}%
+  \begin{minipage}{\textwidth}%
+  \hrule \vspace*{2ex}%
+  % reassign dimensions for prooftrees
+  \proofrulebaseline=2ex%
+  \proofrulebreadth=.05em%
+  \proofdotseparation=1.25ex%
+}{%
+%\vspace{2ex}
+  \hrule%
+%\addvspace{2ex}%
+  \end{minipage}%
+  %\end{scriptsize}%
+  \end{center}%
+  \caption{\deffigurecaption}%
+  \end{figure*}%
+}
+
+\newenvironment{figuretwosqueeze}[1]{%
+  \def\deffigurecaption{#1}%
+  \begin{figure*}[htbp]%
+  \begin{center}%
+  %\begin{scriptsize}%
+  \begin{minipage}{\textwidth}%
+  \hrule \vspace*{2ex}%
+  % reassign dimensions for prooftrees
+  \proofrulebaseline=2ex%
+  \proofrulebreadth=.05em%
+  \proofdotseparation=1.25ex%
+}{%
+%\vspace{2ex}
+\hrule%
+%\addvspace{2ex}%
+  \end{minipage}%
+  %\end{scriptsize}%
+  \end{center}%
+  \caption{\deffigurecaption}%
+  \end{figure*}%
+}
+
+%
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "talkAIM27"
+%%% End:
