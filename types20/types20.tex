@@ -1,0 +1,162 @@
+\nonstopmode
+\RequirePackage[dvipsnames]{xcolor}
+
+\documentclass[a4paper]{easychair}
+\usepackage{amssymb}
+%\usepackage{dsmath}
+%\usepackage{bbm}
+\usepackage{bbold}
+\usepackage[utf8x]{inputenc}
+
+\usepackage{natbib}
+\usepackage{hyperref}
+\urlstyle{sf} % less wide than tt
+% \usepackage{agda} % colors
+
+\definecolor{DeepJungleGreen}{rgb}{0.0, 0.29, 0.29}
+\definecolor{DarkSpringGreen}{rgb}{0.09, 0.45, 0.27}
+\definecolor{ForestGreenTraditional}{rgb}{0.0, 0.27, 0.13}
+\definecolor{GreenPigment}{rgb}{0.0, 0.65, 0.31}
+\definecolor{CalPolyPomonaGreen}{rgb}{0.12, 0.3, 0.17}
+\definecolor{CSSGreen}{rgb}{0.0, 0.5, 0.0}
+\definecolor{DarkCerulean}{rgb}{0.03, 0.27, 0.49}
+\definecolor{DarkRaspberry}{rgb}{0.53, 0.15, 0.34}
+
+\colorlet{DarkBlue}{MidnightBlue!80!black}
+\definecolor{HanBlue}{rgb}{0.27, 0.42, 0.81}
+\definecolor{FrenchBlue}{rgb}{0.0, 0.45, 0.73}
+\definecolor{EgyptianBlue}{rgb}{0.06, 0.2, 0.65}
+
+\hypersetup{colorlinks=true,
+  linkcolor=Red,
+  citecolor=DarkRaspberry,%DarkPurple,%DarkCerulean,%CSSGreen,%CalPolyPomonaGreen,%GreenPigment,%ForestGreenTraditional,%DarkSpringGreen,%DeepJungleGreen,%ForestGreen,
+  urlcolor=MidnightBlue}
+
+\makeatletter
+\renewcommand\bibsection{%
+  \section*{\large{\refname}}%
+}%
+\makeatother
+
+% less space between entries in bibliography
+\let\OLDthebibliography\thebibliography
+\renewcommand\thebibliography[1]{
+  \OLDthebibliography{#1}
+  \setlength{\parskip}{0pt}
+  \setlength{\itemsep}{0.2ex plus 0.3ex}
+}
+
+%% Macros
+
+\input{macros}
+
+\renewcommand{\patom}{\ensuremath{o}}
+\renewcommand{\tVnf}{\mathsf{Nf}}
+
+\begin{document}
+
+\title{Type-preserving compilation via dependently typed syntax}% in Agda}
+\titlerunning{Type-preserving compilation via dependently typed syntax}
+\authorrunning{A. Abel}
+\author{Andreas Abel\thanks{Supported by VR grants 621-2014-4864 and
+    2019-04216 and EU
+  Cost Action CA15123.}}
+\institute{
+  Department of Computer Science and Engineering,
+  Gothenburg University
+}
+
+% Keywords:
+% Agda, Dependent types, Indexed data types, Typed Assembly, Verified compilation
+
+\maketitle
+
+%\begin{abstract}
+%\end{abstract}
+
+\noindent
+
+The \emph{CompCert} project \citep{leroy:cacm09} produced a verified
+compiler for a large fragment of the C programming language.  The
+CompCert compiler is implemented in the type-theoretic proof assistant
+Coq \citep{inria:coq89}, and is fully verified: there is a proof that
+the semantics of the source program matches the semantics of the
+target program.  However, full verification comes with a price: the
+majority of the formalization is concerned not with the runnable code
+of the compiler, but with properties of its components and proofs of
+these properties.
+If we are \emph{not} willing to pay the price of full verification, can we
+nevertheless profit from the technology of type-theoretic proof
+assistants to make our compilers \emph{safer} and \emph{less likely}
+to contain bugs?
+
+In this talk, I am presenting a compiler for a small fragment of the C
+language using \emph{dependently-typed syntax}
+\citep{bentonHurKennedyMcBride:jar12,allaisAtkeyChapmanMcBrideMcKinna:icfp18}.
+A typical compiler is proceeding in phases: parsing, type checking,
+code generation, and finally, object/binary file creation.  Parsing and type
+checking make up the \emph{front end}, which may report syntax and
+type errors to the user; the other phases constitute the \emph{back
+  end} that should only fail in exceptional cases.  After type
+checking succeeded, we have to deal only with well-typed source
+programs, whose abstract syntax trees can be captured with the indexed
+data types of dependently-typed proof assistants and programming
+languages like Agda \citep{agda:260}, Coq, Idris \citep{brady:jfp13},
+Lean \citep{deMoura:cade15} etc.  More concisely, we shall by
+\emph{dependently-typed syntax} refer to the technique of capturing
+well-typedness invariants of syntax trees.
+
+Representing also typed assembly language
+\citep{morrisettWalkerCraryGlew:toplas99} via dependently-typed
+syntax, we can write a type-preserving compiler whose type soundness
+is given \emph{by construction}.  In the talk, the target of
+compilation is a fragment of the Java Virtual Machine (JVM) enriched
+by some \emph{administrative instructions} that declare the types of
+local variables.  With JVM being a stack machine, instructions are
+indexed not only by the types of the local variables, but also by the
+types of the stack entries before and after the instruction.  However
+for instructions that change the control flow, such as unconditional
+and conditional jumps, we need an additional structure to ensure type
+safety.  Jumps are safe if the jump target has the same machine typing
+than the jump source.  By \emph{machine typing} we mean the pair of
+the types of the local variables and the types of the stack entries.
+Consequently, each label (\ie, jump target) needs to be assigned a
+machine type and can only be targeted from a program point with the
+same machine type.  Technically, we represent labels as machine-typed
+de Bruijn indices, and control-flow instructions are indexed by a
+context of label types.  We then distinguish two types of labels:
+\begin{enumerate}
+\item Join points, \eg, labels of statements following an \texttt{if-else} statement.
+  Join points can be represented by a \texttt{let} binding in the abstract JVM
+  syntax.
+\item Looping points, \eg, labels at the beginning of a \texttt{while}
+  statement that allow back jumps to iterate the loop.  Those are
+  represented by \texttt{fix} (recursion).
+\end{enumerate}
+Using dependently-typed machine syntax, we ensure that
+\emph{well-typed jumps do not miss}.  As a result, we obtain a
+type-preserving compiler by construction, with a good chance of full
+correctness, since many compiler faults already break typing invariants.
+Intrinsic well-typedness also allows us to write the compiler as a
+total function from well-typed source to typed assembly, and totality
+can be automatically verified by the Agda type and termination checker.
+
+
+% \paragraph*{Acknowledgments.}
+% %Thanks to the anonymous referees, who helped improving the quality of
+% %this abstract through their feedback.
+% This work was supported by
+% Vetenskapsr\aa{}det under Grant
+%   No.~621-2014-4864 \emph{Termination Certificates
+%   for Dependently-Typed Programs and Proofs via Refinement Types}
+% and by the EU Cost Action CA15123 \emph{Types for programming and verification}.
+
+%\begin{footnotesize}
+
+\bibliographystyle{abbrvnat}
+%\bibliographystyle{abbrvurl}
+%\bibliographystyle{plainurl} % no author-year cit.
+\bibliography{auto-types20}
+
+%\end{footnotesize}
+\end{document}

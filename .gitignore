@@ -2,6 +2,16 @@
 *.agdai
 *.hi
 *.o
+*.aux
+*.bbl
+*.blg
+*.log
+*.nav
+*.out
+*.pdf
+*.snm
+*.toc
+*.vrb
 a.out
 lab2
 Bug*.agda
@@ -10,3 +20,6 @@ MAlonzo
 /src/agda/lab3
 /src/agda/test/*.class
 /src/agda/*.j
+/types20/EasyChair3.5/easychair.bib
+/types20/EasyChair3.5/throneEC.jpg
+/types20/EasyChair3.5/easychair.tex
