@@ -611,7 +611,7 @@ bool prime (int p) {
   \begin{itemize}
   \item Hierarchical:
     \begin{itemize}
-    \item function defintions contain statements,
+    \item function definitions contain statements,
     \item statements contain expressions.
     \end{itemize}
   \item Types: $\Ty = \{ \tint, \tdouble,  \tbool, \tvoid \}$.
@@ -809,7 +809,7 @@ L_done: ireturn
   \item Constructors:
 \[
 \begin{array}{lcl@{~}c@{~}l@{}l}
-  \tldc & : & (i : \Val[\tint]\Gamma) & \to & \SI[\Gamma]\Phi{&(\Phi.\tint)} \\
+  \tldc & : & (i : \Val[\tint]) & \to & \SI[\Gamma]\Phi{&(\Phi.\tint)} \\
   \tload & : & (x : \Var[t]\Gamma) & \to & \SI[\Gamma]\Phi{&(\Phi.t)} \\
   \tstore & : & (x : \Var[t]\Gamma) & \to & \SI[\Gamma]{(\Phi.t)}{&\Phi} \\
   \tarith & : & (\vop : \ArithOp t) & \to & \SI[\Gamma]{(\Phi.t.t)}{&(\Phi.t)}
@@ -926,14 +926,14 @@ L_true: istore_3          ;; [int]     -> []
     \end{itemize}
   \item Constructors:
 \[
-\begin{array}{lcl@{}l@{~}c@{~}l@{}l}
+\begin{array}{@{}l@{~}c@{~}l@{}l@{~}c@{~}l@{}l}
   \texec   & : & (i : \SI[\Gamma] \Phi {\Phi'})\ & (\vfc : \FC[\vrt] {(\Gamma,\Phi')} \GL)
                  & \to & \FC[\vrt] {(\Gamma,\Phi)} {&\GL} \\
   \tdecl   & : & (t : \Ty)\ & (\vfc : \FC[\vrt] {(\Gamma.t,\Ge)} \GL) & \to & \FC[\vrt] {(\Gamma,\Ge)} {&\GL} \\
   % \tdecl   & : & (t : \Ty)\ & (\vfc : \FC[\vrt] {(\Gamma.t,\Phi)} \GL) & \to & \FC[\vrt] {(\Gamma,\Phi)} {&\GL} \\
   \treturn & : & (e : \Exp[\vrt] \Gamma) & & \to & \FC[\vrt] {(\Gamma,\Ge)} {&\GL} \\
   \tgoto   & : & (\ell : \Label[\Xi]\Gamma) & & \to & \FC[\vrt] \Xi {&\GL} \\
-  \tbranch & : & (\vop : \CmpOp t) \ & (\vfc_1\;\vfc_2 : \FC[\vrt] {(\Gamma,\Phi)} \GL) & \to & \FC[\vrt] {(\Gamma,\Phi.t.t)} {&\GL} \\
+  \tbranch & : & (o : \CmpOp t) \ & (\vfc\;\vfc' : \FC[\vrt] {(\Gamma,\Phi)} \GL) & \to & \FC[\vrt] {(\Gamma,\Phi.t.t)} {&\GL} \\
   \tlet    & : & (\vfc' : \FC[\vrt] {\Xi'} \GL)\ & (\vfc : \FC[\vrt] \Xi {(\GL.\Xi')}) & \to & \FC[\vrt] \Xi {&\GL} \\
   \tfix    & : & & (\vfc : \FC[\vrt] \Xi {(\GL.\Xi)}) & \to & \FC[\vrt] \Xi {&\GL} \\
 \end{array}
@@ -999,10 +999,11 @@ L_true: istore_3          ;; [int]     -> []
   \item Andrew Appell, Modern compiler implementation in C/Java/ML
   \item Xavier Leroy et al., CompCert, in Coq
   \item Magnus Myreen et al., CakeML, in HOL
+  \item DeepSpec project: Verified tool chain
+  \item Greg Morrisett et al., Typed Assembly Language
   \item Alberto Pardo, Emmanuel Gunter, Miguel Pagano, Marcos Viera,
 \emph{An Internalist Approach to Correct-by-Construction Compilers},  PPDP'18:
 Terms indexed by semantics (in Agda)
-  \item DeepSpec project: Verified tool chain.
   \end{itemize}
 \end{frame}
 
