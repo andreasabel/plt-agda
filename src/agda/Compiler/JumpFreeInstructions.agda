@@ -115,6 +115,12 @@ module _ {Σ : Sig} where
   -- Smart cons, doing peephole optimizations.
 
   _∷ᵒ_ : ∀{Ξ Ξ′ Ξ″} (j : JF Σ Ξ Ξ′) → JFs Σ Ξ′ Ξ″ → JFs Σ Ξ Ξ″
+  j            ∷ᵒ jf@(callI _          ∷ _) = j ∷ jf
+  j            ∷ᵒ jf@(storeI _         ∷ _) = j ∷ jf
+  j            ∷ᵒ jf@(scopeI _         ∷ _) = j ∷ jf
+  j            ∷ᵒ jf@(stackI (const _) ∷ _) = j ∷ jf
+  j            ∷ᵒ jf@(stackI dup       ∷ _) = j ∷ jf
+  j            ∷ᵒ jf@(stackI (arith _) ∷ _) = j ∷ jf
   j            ∷ᵒ (stackI (pop {t = void}) ∷ jf) = j ∷ jf
   (stackI  j)  ∷ᵒ (stackI (pop {t = ` t }) ∷ jf) = stackIPop j Seq.++ jf
   (storeI  j)  ∷ᵒ (stackI (pop {t = ` t }) ∷ jf) = storeIPop j Seq.++ jf

@@ -274,7 +274,7 @@ module _ {Σ : Sig} {rt : Type} where
     -- Compiling conditionals.
 
     compileCond : ∀{Γ}
-      (e : Exp` Σ Γ bool) {Φ Λ}
+      (e : Exp` Σ Γ bool) {Λ Φ}
       (kᵗ kᶠ : CompRes (Γ , Φ) Λ)
       → CompRes (Γ , Φ) Λ
     compileCond (eConst false) kᵗ kᶠ = kᶠ

@@ -38,6 +38,10 @@ data ReturnRes rt : ∀ (r : Res rt) {Φ} (φ : Frame Φ) → Set where
 -- corrReturnRes (` t) ret = refl
 -- corrReturnRes void  ret = _
 
+
+-- TODO: Need an assumption that the program P has been compiled correctly
+-- to the methods M
+
 module _ {Σ : Sig} {P : Prg Σ Σ} {M : Meths Σ Σ} {rt : Type} {rv : Val rt} where
 
   open BBTypes Σ rt
@@ -99,6 +103,44 @@ module _ {Σ : Sig} {P : Prg Σ Σ} {M : Meths Σ Σ} {rt : Type} {rv : Val rt} 
     corrExp (evAss evE assX) (ev□Block (evBB evJF evCtrl)) = corrExp evE (ev□Block (evBB (evStoreI (evStore assX) ∷ᵒ-ev (evStoreI (evLoad (lookupUpdated assX)) ∷ᵒ-ev evJF)) evCtrl))
     corrExp (evAss evE assX) (ev□Goto ev)                  = corrExp evE (ev□Block (evBB (evStoreI (evStore assX) ∷      evStoreI (evLoad (lookupUpdated assX)) ∷ []) (evGoto ev)))
 
+    corrCond : ∀ {Γ} {e : Exp` Σ Γ bool} {b : Bool} {γ γ' : Env Γ} {Φ} {φ : Frame Φ}
+      → P , γ ⊢ e ⇓ᵉ b , γ'
+      → ∀ {Λ kᵗ kᶠ ƛ} (let cr = compileCond {rt = rt} e {Λ} kᵗ kᶠ)
+      → (evᵗ : CREval M ƛ rv kᵗ (γ' , φ))
+      → (evᶠ : CREval M ƛ rv kᶠ (γ' , φ))
+      → CREval M ƛ rv cr (γ , φ)
+    corrCond {b = false} evConst evᵗ evᶠ = evᶠ
+    corrCond {b = true} evConst evᵗ evᶠ = evᵗ
+    corrCond (evOp evE evE₁ x) evᵗ evᶠ = {!!}
+
+    corrCond evE@(evVar _)       evᵗ evᶠ = corrExp evE (corrBranchBool _ evᵗ evᶠ)
+    corrCond evE@(evApp _ _ _ _) evᵗ evᶠ = {!!}
+    corrCond evE@(evAss _ _)     evᵗ evᶠ = {!!}
+
+    corrBranchBool : ∀ (b : Bool) {Γ}  {γ : Env Γ} {Φ} {φ : Frame Φ}
+      → ∀ {Λ kᵗ kᶠ} {ƛ : LS Σ rt Λ}
+      → (evᵗ : CREval M ƛ rv kᵗ (γ , φ))
+      → (evᶠ : CREval M ƛ rv kᶠ (γ , φ))
+      → CREval M ƛ rv (crIfElse (eqBool true) kᵗ kᶠ) (γ , just b ∷ φ)
+    corrBranchBool false (ev□Block _) (ev□Block ev) = ev□Block (evBB [] (evIfFalse evEqBoolFalse {!aux ev !}))
+    corrBranchBool false (ev□Goto  _) (ev□Block ev) = ev□Block (evBB [] (evIfFalse evEqBoolFalse {!!}))
+    corrBranchBool false evᵗ (ev□Goto ev) = {!ev□Block (evBB ? (evGoto ev))!}
+    corrBranchBool true (ev□Block ev) evᶠ = {!!}
+    corrBranchBool true (ev□Goto ev) evᶠ = {!!}
+
+    -- TODO: prove some kind of monotonicity for BBEval
+
+    --   → BBEval M
+    --      (ƛ'' ⊆-refl ++LS ƛ)
+    --      rv
+    --      (γ , φ)
+    --      (□bb ⊆-refl)
+    --   → BBEval M
+    --      (WithBBs.bbs (joinBBs (η ∙ ƛ' ∙ □l) (η₁ ∙ ƛ'' ∙ □bb)) ⊆-refl ++LS ƛ)
+    --      rv
+    --      (γ , φ)
+    --      (proj₂ (WithBBs.res (joinBBs (η ∙ ƛ' ∙ □l) (η₁ ∙ ƛ'' ∙ □bb)) ⊆-refl))
+
     corrCall : ∀ {Γ t Δ Δ'} {f : funType Δ t ∈ Σ} {v : Val t} {γ : Env Γ}  {Φ} {φ : Frame Φ}
       {ss : Stms Σ t [] Δ Δ'} {vs : Vals Δ} {δ′ : Frame Δ'} {r : Res t}
       → (evF    : f ↦ Δ' , ss ∈ P)
@@ -107,7 +149,11 @@ module _ {Σ : Sig} {P : Prg Σ Σ} {M : Meths Σ Σ} {rt : Type} {rv : Val rt} 
       → ∀ {Λ k} {ƛ : LS Σ rt Λ}
       → CREval M ƛ rv k                           (γ , φ ▷ᵛ v)
       → CREval M ƛ rv (crExec (callI (call f)) k) (γ , φ ▷ᵛˢ vs)
-    corrCall evF evBody evRt ev = {!!}
+    corrCall evF evBody evRt (ev□Block ev) = {!!}
+    corrCall evF evBody evRt (ev□Goto ev) = ev□Block (evBB (evCallI (evCall (evFun {!!})) ∷ []) (evGoto ev))
+       -- Goal:
+       -- BBEval M (Meth.blocks (List.All.lookup M f)) v
+       --      (List.All.map just vs ∷ [] , []) (Meth.entry (List.All.lookup M f))
 
     corrStms : ∀ {Γ Δ Δ'} {ss : Stms Σ rt Γ Δ Δ'} {γ γ'} {r : Res rt} {Φ} {φ : Frame Φ}
       → (evSS : P , γ ⊢ ss ⇓ˢˢ r , γ')
@@ -123,16 +169,16 @@ module _ {Σ : Sig} {P : Prg Σ Σ} {M : Meths Σ Σ} {rt : Type} {rv : Val rt} 
       → ∀ {Λ k ƛ} (let cr = compileStm {rt = rt} s {Λ} k)
       → CREval? M ƛ rv k (γ' , φ) r
       → CREval  M ƛ rv cr (γ , φ)
-    corrStm (evReturn evE) ret       = corrComment (corrExp evE (corrReturn (corrReturnVal _)))
-    corrStm (evExp evE)    (cont ev) = corrComment (corrExp evE (corrPop ev))
-    corrStm evDecl         (cont ev) = corrComment (corrDecl ev)
-    corrStm (evInit evE)   (cont ev) = corrComment (corrExp evE (corrInit ev))
-    corrStm (evBlock evSS) ev = corrNewBlock (corrStms evSS {!corrPopBlock <$> ev !})
-    corrStm (evWhileDone evF) (cont ev) = corrComment {!!}
+    corrStm (evReturn evE)      ret       = corrComment (corrExp evE (corrReturn (corrReturnVal _)))
+    corrStm (evExp evE)         (cont ev) = corrComment (corrExp evE (corrPop ev))
+    corrStm evDecl              (cont ev) = corrComment {! corrDecl ev !}
+    corrStm (evInit evE)        (cont ev) = corrComment (corrExp evE (corrInit ev))
+    corrStm (evBlock evSS)      ev        = corrNewBlock (corrStms evSS (corrPopBlock <$> ev))
+    corrStm (evWhileDone evF)   (cont ev) = corrComment {!!}
     corrStm (evWhileStep evT evS evS') ev = corrComment {!!}
-    corrStm (evWhileRet evT evS) ret = corrComment {!!}
-    corrStm (evIfThen evT evS) ev = corrComment {!!}
-    corrStm (evIfElse evF evS) ev = corrComment {!!}
+    corrStm (evWhileRet evT evS)      ret = corrComment {!!}
+    corrStm (evIfThen evT evS)  ev        = corrComment {!!}
+    corrStm (evIfElse evF evS)  ev        = corrComment {!!}
 
     corrReturn : ∀ {Γ} {v : Val rt} {γ : Env Γ} {Φ} {φ : Frame Φ} {Λ} {ƛ : LS Σ rt Λ}
       → (evRt : ReturnVal rt rv (φ ▷ᵛ v))
