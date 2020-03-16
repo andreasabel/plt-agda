@@ -164,8 +164,8 @@ module _ (Σ : Sig) (returnType : Type) where
       -- The bodies of sWhile and sIfElse do not permit scope extensions here.
       -- The type checker will possibly insert sBlock constructors to ensure
       -- no scope extension happens.
-      sWhile  : (e : Exp` Σ Γ bool) (s : Stm Γ void)    → Stm Γ void      -- while (e) s
-      sIfElse : (e : Exp` Σ Γ bool) (s s' : Stm Γ void) → Stm Γ void      -- if (e) s else s'
+      sWhile  : (e : Exp` Σ Γ bool) (s : Stm Γ void)       → Stm Γ void   -- while (e) s
+      sIfElse : (e : Exp` Σ Γ bool) (s s' : Stm Γ void)    → Stm Γ void   -- if (e) s else s'
 
     -- We expose the top block Δ, which can be extended by statements.
 

@@ -15,11 +15,10 @@ MT = Cxt × ST
 -- Stack-only instructions
 
 data StackI : (Φ Φ' : ST) → Set where
-  const : ∀{Φ t} (v : Val` t) → StackI Φ (t ∷ Φ)
-  dup   : ∀{Φ t} → StackI (t ∷ Φ) (t ∷ t ∷ Φ)
-  pop   : ∀{Φ t} → StackI (Φ ▷ᵇ t) Φ
+  const : ∀{Φ t} (v : Val` t)     → StackI Φ           (t ∷ Φ)
+  dup   : ∀{Φ t}                  → StackI (t ∷ Φ)     (t ∷ t ∷ Φ)
+  pop   : ∀{Φ t}                  → StackI (Φ ▷ᵇ t)    Φ
   arith : ∀{Φ t} (op : ArithOp t) → StackI (t ∷ t ∷ Φ) (t ∷ Φ)
-  -- dcmp  : ∀{Φ} → StackI (double ∷ double ∷ Φ) (int ∷ Φ)
 
 StackIs = Seq StackI
 StackK  = Yonedaʳ StackIs
@@ -31,9 +30,9 @@ pattern inc = incr int
 pattern dec = decr int
 
 data StoreI (Γ : Cxt) : (Φ Φ' : ST) → Set where
-  store  : ∀{Φ t} (x : Var Γ t) → StoreI Γ (t ∷ Φ) Φ
-  load   : ∀{Φ t} (x : Var Γ t) → StoreI Γ Φ (t ∷ Φ)
-  incDec : ∀{Φ} (b : IncDec) (x : Var Γ int) → StoreI Γ Φ Φ
+  store  : ∀{Φ t}            (x : Var Γ t)   → StoreI Γ (t ∷ Φ) Φ
+  load   : ∀{Φ t}            (x : Var Γ t)   → StoreI Γ Φ       (t ∷ Φ)
+  incDec : ∀{Φ} (b : IncDec) (x : Var Γ int) → StoreI Γ Φ       Φ
 
 StoreIs = λ Γ → Seq (StoreI Γ)
 StoreK  = λ Γ → Yonedaʳ (StoreIs Γ)
