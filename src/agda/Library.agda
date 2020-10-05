@@ -3,13 +3,13 @@
 module Library where
 
 open import Agda.Builtin.Float public using (Float) renaming
-  ( primFloatNumericalEquality to _==?ᵈ_
-  ; primFloatNumericalLess     to _<?ᵈ_
-  ; primNatToFloat             to ℕ→double
-  ; primFloatPlus              to _+ᵈ_
-  ; primFloatMinus             to _-ᵈ_
-  ; primFloatTimes             to _*ᵈ_
-  ; primFloatDiv               to _/ᵈ_
+  ( primFloatEquality to _==?ᵈ_
+  ; primFloatLess     to _<?ᵈ_
+  ; primNatToFloat    to ℕ→double
+  ; primFloatPlus     to _+ᵈ_
+  ; primFloatMinus    to _-ᵈ_
+  ; primFloatTimes    to _*ᵈ_
+  ; primFloatDiv      to _/ᵈ_
   )
 1ᵈ = ℕ→double 1
 

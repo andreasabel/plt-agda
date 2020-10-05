@@ -27,7 +27,6 @@ Cxt = List⁺ Block
 -- The first picks a block, the second an entry in this block.
 
 record Var⁻ (Γ : Cxt⁻) (t : Ty) :  Set where
-  no-eta-equality
   constructor var
   field
     varName : Name
