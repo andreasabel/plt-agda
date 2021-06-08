@@ -1,8 +1,11 @@
 -- An unverified interpreter into I/O trees.
 
+{-# OPTIONS --sized-types #-}
+
 module Interpreter where
 
 open import Library renaming (IO to OS)
+open import Size
 
 open import WellTypedSyntax
 open import Value

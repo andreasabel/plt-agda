@@ -56,7 +56,9 @@ open import Relation.Nullary public using (¬_; Dec; yes; no)
 open import Relation.Nullary.Decidable public using (⌊_⌋) renaming (map′ to mapDec)
 open import Relation.Unary public using (_∩_) renaming (_⊆_ to _⇒_)
 
-open import Size public
+-- open import Size public
+-- Don't import Size here, as it will infect all modules and
+-- Agda 2.6.2 will demand that they declare --sized-types.
 
 pattern here! = here refl
 

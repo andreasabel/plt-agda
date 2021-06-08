@@ -1,3 +1,4 @@
+{-# OPTIONS --sized-types #-}
 
 module lab3 where
 

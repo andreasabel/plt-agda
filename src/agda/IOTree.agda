@@ -9,6 +9,8 @@
 -- there can never be a response.  A translation to actual I/O
 -- can interpret such commands by premature program termination.
 
+{-# OPTIONS --sized-types #-}
+
 module IOTree {c} {r} (Command : Set c) (Response : Command → Set r) where
 
 open import Level using (_⊔_)
