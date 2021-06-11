@@ -1,5 +1,3 @@
-{-# OPTIONS --sized-types #-}
-
 module lab3 where
 
 open import Library
@@ -10,9 +8,6 @@ open import Compiler.BasicBlocks using (compileProgram)
 open import Compiler.BB.ToJasmin using (programToJVM)
 
 -- Other modules, not used here
-import Environment
-import Evaluation
-import Interpreter
 import Compiler.FC.CompileToFC
 
 check : String → String → String → IO ⊤
