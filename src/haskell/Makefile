@@ -1,5 +1,8 @@
 # Makefile for PLT lab 2
 
+# alex 3.2.6 does not produce GHC 9.2-compatible Haskell with option --ghc
+# ALEX_OPTS=--ghc
+
 .PHONY: test
 
 all : lab2 test
@@ -20,7 +23,7 @@ CPP/Par.hs: CPP/Par.y
 	happy -gcai $<
 
 CPP/Lex.hs: CPP/Lex.x
-	alex -g $<
+	alex $(ALEX_OPTS) $<
 
 CPP/Test: CPP/Test.hs CPP/Par.hs CPP/Lex.hs
 	ghc --make $< -o $@
