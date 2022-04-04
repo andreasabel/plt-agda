@@ -62,7 +62,7 @@ instance Semigroup (Eval Res) where
 
 instance Monoid (Eval Res) where
   mempty  = return Cont
-  mappend = semicolon
+  mappend = (<>)
 
 -- | Run the second computation unless the first returns 'Ret'.
 semicolon :: Eval Res -> Eval Res -> Eval Res

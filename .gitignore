@@ -16,6 +16,7 @@ a.out
 lab2
 Bug*.agda
 MAlonzo
+dist-newstyle
 /src/haskell/CPP/
 /src/agda/lab3
 /src/agda/test/*.class
