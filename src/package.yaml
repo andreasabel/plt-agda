@@ -1,0 +1,59 @@
+name:      plt-agda
+version:   0.0.20220404
+synopsis:  A compiler from a fragment of C++ to JVM, implemented in Agda
+license:   BSD-3-Clause
+author:    Andreas Abel <andreas.abel@gu.se>
+category:  Compiler
+
+# hpack version
+spec-version: 0.34.3
+
+tested-with:
+  - GHC == 8.0.2
+  - GHC == 8.2.2
+  - GHC == 8.4.4
+  - GHC == 8.6.5
+  - GHC == 8.8.4
+  - GHC == 8.10.7
+  - GHC == 9.0.2
+  - GHC == 9.2.2
+
+dependencies:
+  - base >= 4.9 && < 5
+
+# ghc-options: -Wall
+
+library:
+  # files in MAlonzo/Code are qualified modules
+  # files in CPP are qualified modules
+  source-dirs:
+    - agda
+    - haskell
+  exposed-modules:
+    - MAlonzo.Code.Qlab2
+    - MAlonzo.Code.Qlab3
+  dependencies:
+    - array
+    - text
+    - filepath
+    - process
+
+  # exclude some modules
+  when:
+    condition: false
+    other-modules:
+      - CPP.Skel
+      - CPP.Test
+      - Interpreter
+      - TypeChecker
+
+executables:
+  lab2:
+    main:         Main
+    source-dirs:  lab2
+    dependencies: plt-agda
+
+  lab3:
+    main:         Main
+    source-dirs:  lab3
+    dependencies: plt-agda
