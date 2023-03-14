@@ -1,10 +1,11 @@
-# Makefile for PLT lab 2
+# Makefile for Agda implementation of PLT labs 2 & 3
 
 agda=agda
 agdafiles=Library.agda ../haskell/CPP/AST.agda ../haskell/CPP/Parser.agda WellTypedSyntax.agda TypeChecker.agda Value.agda Evaluation.agda Interpreter.agda Compiler/FlowChart.agda Compiler/BasicBlocks.agda Compiler/BB/ToJasmin.agda
+hsfiles=MAlonzo/Code/TypeChecker.hs
 ghcflags=--ghc-flag=-i../haskell --ghc-flag=-Wwarn
 
-.PHONY : test test-local
+.PHONY : test test-local lab2 lab3
 
 # Must be first goal...
 

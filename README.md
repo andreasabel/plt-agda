@@ -1,11 +1,10 @@
 # Interpreter and compiler for a procedural language (fragment of C) in Agda
 
 Requirements:
-- latest Agda version (development version)
-- latest Agda standard-library (developent version)
+- Agda ≥ 2.6.2
+- Agda standard-library ≥ 1.7.1
 
-Building and running on a few examples:
+Building:
 ```
-  cd src/agda
-  make test-local
+  make -C src
 ```

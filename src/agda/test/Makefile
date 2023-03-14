@@ -1,6 +1,5 @@
 .PHONY : test
-
 test :
-	make -C .. test
+	make -C .. test-local
 
 # EOF
