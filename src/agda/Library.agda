@@ -102,7 +102,7 @@ module Integer where
 module List where
   open import Data.List.Base               public using ([_]; _++_; concat; map; foldl; foldr; reverse; sum; fromMaybe; intersperse)
   open import Data.List.Relation.Unary.All public using (All; []; _∷_) hiding (module All)
-  open import Data.List.Effectful          public using (module TraversableM)
+  open import Data.List.Categorical        public using (module TraversableM)
 
   module Any where
 
