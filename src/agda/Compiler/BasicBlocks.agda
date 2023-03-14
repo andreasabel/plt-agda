@@ -32,16 +32,6 @@ module BBTypes (Σ : Sig) (rt : Type) where
       bbIfElse : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (bb bb' : BB Λ (Γ , Φ')) → BBCtrl Λ (Γ , Φ)
       bbIf     : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (l : (Γ , Φ') ∈ Λ) (bb : BB Λ (Γ , Φ')) → BBCtrl Λ (Γ , Φ)
 
-  -- data BB (Λ : Labels) : (Ξ : MT) → Set where
-  --   -- Ends:
-  --   bbGoto   : ∀{Ξ} (l : Ξ ∈ Λ) → BB Λ Ξ             -- goto join point (same Ξ)
-  --   bbReturn : ∀{Γ Φ}           → BB Λ (Γ , Φ ▷ᵇ rt) -- return from function (stack is destroyed)
-  --   -- Branching:
-  --   bbIfElse : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (bb bb' : BB Λ (Γ , Φ')) → BB Λ (Γ , Φ)
-  --   bbIf     : ∀{Γ Φ Φ'} (c : Cond Φ Φ') (l : (Γ , Φ') ∈ Λ) (bb : BB Λ (Γ , Φ')) → BB Λ (Γ , Φ)
-  --   -- Cons-like: Instruction
-  --   bbExec     : ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') (bb : BB Λ Ξ') → BB Λ Ξ
-
   BB′ = λ Ξ Λ → BB Λ Ξ
   BBCtrl′ = λ Ξ Λ → BBCtrl Λ Ξ
 
@@ -83,38 +73,10 @@ module _ {Σ : Sig} {rt : Type} where
 
   -- Smart constructors.
 
-  -- Execute j, then pop t.
-
-  -- bbStackIPop : ∀ {t Γ Φ Φ'} (j : StackI Φ (t ∷ Φ')) → BB′ (Γ , Φ') ⇒ BB′ (Γ , Φ)
-  -- bbStackIPop j (mkBB jfs ctrl) = mkBB (stackIPop j jfs) ctrl
-
-  -- bbStackIPop : ∀ {t Γ Φ Φ'} (j : StackI Φ (t ∷ Φ')) → BB′ (Γ , Φ') ⇒ BB′ (Γ , Φ)
-  -- bbStackIPop     (const v)  = id
-  -- bbStackIPop     dup        = id
-  -- bbStackIPop {t} pop        = bbExec (stackI pop)             ∘ bbExec (stackI (pop {t = ` t}))
-  -- bbStackIPop {t} (arith op) = bbExec (stackI (pop {t = ` t})) ∘ bbExec (stackI (pop {t = ` t}))
-
-  -- bbStoreIPop : ∀ {t Γ Φ Φ'} (j : StoreI Γ Φ (t ∷ Φ')) → BB′ (Γ , Φ') ⇒ BB′ (Γ , Φ)
-  -- bbStoreIPop (load x)     = id
-  -- bbStoreIPop (store x)    = bbExec (storeI (store x)) ∘ bbExec (stackI pop)
-  -- bbStoreIPop (incDec b x) = bbExec (stackI pop) ∘ bbExec (storeI (incDec b x))
-
-  -- bbExecPop : ∀ {Γ Φ Φ' t} (j : JF Σ (Γ , Φ) (Γ , t ∷ Φ')) → BB′ (Γ , Φ') ⇒ BB′ (Γ , Φ)
-  -- bbExecPop j = {!j!}
-
   -- Smart cons, doing peephole optimizations.
 
   bbExecOpt :  ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') → BB′ Ξ' ⇒ BB′ Ξ
   bbExecOpt j (mkBB jfs ctrl) = mkBB (j ∷ᵒ jfs) ctrl
-
-  -- bbExecOpt :  ∀{Ξ Ξ'} (j : JF Σ Ξ Ξ') → BB′ Ξ' ⇒ BB′ Ξ
-  -- bbExecOpt j            (bbExec (stackI (pop {t = void})) bb) = bbExec j bb
-  -- bbExecOpt (stackI  j)  (bbExec (stackI (pop {t = ` t })) bb) = bbStackIPop j bb
-  -- bbExecOpt (storeI  j)  (bbExec (stackI (pop {t = ` t })) bb) = bbStoreIPop j bb
-  -- bbExecOpt (comment x)  (bbExec (stackI (pop {t = ` t })) bb) = bbExec (stackI pop) $ bbExec (comment x) bb
-  -- bbExecOpt (comment x)  (bbExec (comment y)               bb) = bbExec (comment $ x ++ y) bb
-  -- bbExecOpt (scopeI adm) (bbExec (comment x)               bb) = bbExec (comment x) $ bbExec (scopeI adm) bb  -- HACK to join comments over "empty" instructions
-  -- bbExecOpt j bb = bbExec j bb
 
   -- Compilation of C-- to basic blocks
 
@@ -140,8 +102,6 @@ module _ {Σ : Sig} {rt : Type} where
     ξ₁    = RawPushout.leg₁ rpo
     ξ₂    = RawPushout.leg₂ rpo
     η     = ⊆-trans η₁ ξ₁
-    -- bbs   : □ (λ Λ′ → AllExt (BB Λ′) η) Λ₁₂
-    -- bbs   = λ τ → AllExt-join (bbs₁ (⊆-trans ξ₁ τ)) (bbs₂ (⊆-trans ξ₂ τ))
 
   crWeak : ∀{Ξ Λ Λ′} (ρ : Λ ⊆ Λ′) → CompRes Ξ Λ → CompRes Ξ Λ′
   crWeak ρ (η ∙ bbs ∙ res) = ξ₂ ∙ (λ τ → AllExt-slide (bbs (⊆-trans ξ₁ τ)) ρ) ∙ weakBOG ξ₁ res
