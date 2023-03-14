@@ -13,52 +13,54 @@ open import Agda.Builtin.Float public using (Float) renaming
   )
 1ᵈ = ℕ→double 1
 
-open import Data.Bool.Base    public using (Bool; true; false; _xor_; not; if_then_else_) hiding (module Bool)
-open import Data.Char.Base    public using (Char)
-open import Data.Empty        public using (⊥)
--- open import Data.Fin          public using (Fin; zero; suc)
-open import Data.Integer.Base public using (ℤ; -[1+_]; +_) -- ; _+_; _-_; _*_)
-open import Data.List.Base    public using (List; []; _∷_; [_]; _++_) hiding (module List)
-open import Data.List.Membership.Propositional public using (_∈_; _∉_)
-open import Data.List.Relation.Unary.All public using ([]; _∷_; updateAt)
-open import Data.List.Relation.Unary.Any public using (here; there)
-open import Data.List.Relation.Unary.Any.Properties public using (there-injective)
+-- Base modules
+
+open import Data.Bool.Base     public using (Bool; true; false; _xor_; not; if_then_else_) hiding (module Bool)
+open import Data.Char.Base     public using (Char)
+open import Data.Empty         public using (⊥)
+open import Data.Integer.Base  public using (ℤ; -[1+_]; +_)
+open import Data.List.Base     public using (List; []; _∷_; [_]; _++_) hiding (module List)
 open import Data.List.NonEmpty public using (List⁺; _∷_; _∷⁺_) hiding (module List⁺)
+
+open import Data.Maybe.Base    public using (Maybe; nothing; just)
+open import Data.Nat.Base      public using (ℕ; zero; suc; _+_; _≤_; s≤s) hiding (module ℕ)
+open import Data.Product       public using (∃; ∃₂; _×_; _,_; proj₁; proj₂; map₂; uncurry)
+  renaming (map to ∃-map)
+open import Data.String.Base   public using (String) renaming (_++_ to _<>_)
+open import Data.Sum.Base      public using (_⊎_; inj₁; inj₂)
+open import Data.Unit.Base     public using (⊤)
+
+open import Function           public using (id; _∘_; _∘′_; _$_; case_of_)
+open import Level              public using (Level; _⊔_)
+
+open import IO.Primitive       public using (IO)
+
+open import Relation.Binary    public using (Decidable; Rel)
+open import Relation.Nullary   public using (¬_; Dec; yes; no)
+open import Relation.Unary     public using (_∩_) renaming (_⊆_ to _⇒_)
+
+-- Advanced modules (long names
+
+open import Relation.Binary.PropositionalEquality public using (_≗_; _≡_; refl; trans; cong; subst)
+open import Relation.Nullary.Decidable            public using (⌊_⌋) renaming (map′ to mapDec)
+
+open import Data.Nat.Properties                   public using (+-identityʳ)
+
+open import Data.List.Membership.Propositional              public using (_∈_; _∉_)
+open import Data.List.Relation.Unary.All                    public using ([]; _∷_; updateAt)
+open import Data.List.Relation.Unary.Any                    public using (here; there)
+open import Data.List.Relation.Unary.Any.Properties         public using (there-injective)
+
 open import Data.List.Relation.Binary.Sublist.Propositional public
-  using (RawPushout; ⊆-pushoutˡ)
-open import Data.List.Relation.Binary.Sublist.Propositional public
-  using (_⊆_; []; _∷_; ⊆-refl; ⊆-trans)
+  using (_⊆_; []; _∷_; ⊆-refl; ⊆-trans; RawPushout; ⊆-pushoutˡ)
   renaming (_∷ʳ_ to ⊆-skip; lookup to ⊆-lookup)
+
 open import Data.List.Relation.Binary.Sublist.Propositional.Properties public
   using (⊆-trans-idˡ; ⊆-trans-idʳ; ⊆-trans-assoc)
 
-open import Data.Maybe.Base   public using (Maybe; nothing; just)
-open import Data.Nat.Base     public using (ℕ; zero; suc; _+_; _≤_; s≤s) hiding (module ℕ)
--- renaming (_≤′_ to _≤_; ≤′-refl to ≤-refl)
-open import Data.Nat.Properties public using (+-identityʳ)
-open import Data.Product      public using (∃; ∃₂; _×_; _,_; proj₁; proj₂; map₂; uncurry)
-  renaming (map to ∃-map)
-open import Data.String.Base  public using (String) renaming (_++_ to _<>_)
-open import Data.Sum.Base     public using (_⊎_; inj₁; inj₂)
-open import Data.Unit.Base    public using (⊤)
-
-open import Function          public using (id; _∘_; _∘′_; _$_; case_of_)
-open import Level             public using (Level; _⊔_)
-
-open import IO.Primitive      public using (IO)
-
-open import Relation.Binary public using (Decidable; Rel)
-open import Relation.Binary.PropositionalEquality public using (_≗_; _≡_; refl; trans; cong; subst)
 import Relation.Binary.Construct.Closure.ReflexiveTransitive renaming (_◅◅_ to _++_)
 module Seq = Relation.Binary.Construct.Closure.ReflexiveTransitive
 open Seq public using () renaming (Star to Seq; ε to []; _◅_ to _∷_) hiding (module Star)
-open import Relation.Nullary public using (¬_; Dec; yes; no)
-open import Relation.Nullary.Decidable public using (⌊_⌋) renaming (map′ to mapDec)
-open import Relation.Unary public using (_∩_) renaming (_⊆_ to _⇒_)
-
--- open import Size public
--- Don't import Size here, as it will infect all modules and
--- Agda 2.6.2 will demand that they declare --sized-types.
 
 pattern here! = here refl
 
@@ -98,9 +100,9 @@ module Integer where
 -- Lists.
 
 module List where
-  open import Data.List.Base        public using ([_]; _++_; concat; map; foldl; foldr; reverse; sum; fromMaybe; intersperse)
+  open import Data.List.Base               public using ([_]; _++_; concat; map; foldl; foldr; reverse; sum; fromMaybe; intersperse)
   open import Data.List.Relation.Unary.All public using (All; []; _∷_) hiding (module All)
-  open import Data.List.Categorical public using (module TraversableM)
+  open import Data.List.Effectful          public using (module TraversableM)
 
   module Any where
 

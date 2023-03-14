@@ -13,10 +13,10 @@
 
 module IOTree {c} {r} (Command : Set c) (Response : Command → Set r) where
 
-open import Level using (_⊔_)
-open import Size
-open import Data.Unit
-open import Function
+open import Level        using (_⊔_)
+open import Size         using (Size; Size<_; ↑_; ∞)
+open import Data.Unit    using (⊤)
+open import Function     using (_∘_; case_of_)
 open import IO.Primitive using () renaming (IO to OS)
 
 mutual
