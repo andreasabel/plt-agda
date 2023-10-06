@@ -39,7 +39,7 @@ open import Relation.Binary    public using (Decidable; Rel)
 open import Relation.Nullary   public using (¬_; Dec; yes; no)
 open import Relation.Unary     public using (_∩_) renaming (_⊆_ to _⇒_)
 
--- Advanced modules (long names
+-- Advanced modules (long names)
 
 open import Relation.Binary.PropositionalEquality public using (_≗_; _≡_; refl; trans; cong; subst)
 open import Relation.Nullary.Decidable            public using (⌊_⌋) renaming (map′ to mapDec)
