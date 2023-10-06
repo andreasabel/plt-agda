@@ -406,8 +406,10 @@ module ErrorMonad {e} {E : Set e} where
   catchError (fail e) h = h e
   catchError (ok a)   h = ok a
 
+open import Category.Functor     using (RawFunctor)
+open import Category.Applicative using (RawApplicative)
 
-module IOMonad where
+module IOFunctor where
   open import IO.Primitive public using (return; _>>=_)
 
   infixl 1 _>>_
@@ -419,6 +421,43 @@ module IOMonad where
 
   _=<<_  : ∀ {a b} {A : Set a} {B : Set b} → (A → IO B) → IO A → IO B
   k =<< m = m >>= k
+
+  -- The following definition is needed to create the RawFunctor instance.
+
+  infixl 4 _<$>_
+
+  _<$>_ :  ∀ {a b} {A : Set a} {B : Set b} → (A → B) → IO A → IO B
+  f <$> m = m >>= λ a -> return (f a)
+
+-- This module is needed to create the RawApplicative instance
+-- in a way compatible with both std-lib v1.7.1/2 and v2.0.
+
+module IOApplicative where
+  open IOFunctor public
+
+  rawFunctor : ∀{ℓ} → RawFunctor (IO {a = ℓ})
+  rawFunctor = record { IOFunctor }
+
+  pure : ∀{a} {A : Set a} → A → IO A
+  pure = return
+
+  infixl 4 _<*>_ _⊛_
+
+  _<*>_ : ∀ {a b} {A : Set a} {B : Set b} → IO (A → B) → IO A → IO B
+  mf <*> ma = mf >>= λ f → ma >>= λ a → return (f a)
+
+  _⊛_ : ∀ {a b} {A : Set a} {B : Set b} → IO (A → B) → IO A → IO B
+  _⊛_ = _<*>_
+
+module IOMonad where
+  open IOApplicative public
+
+  -- Field rawApplicative is part of the RawMonad of std-lib v2.0
+  -- Thus we have to construct the Applicative implementation
+  -- even though we do not use it.
+  --
+  rawApplicative : ∀{ℓ} → RawApplicative (IO {a = ℓ})
+  rawApplicative = record { IOApplicative }
 
 {-# FOREIGN GHC import qualified Data.List #-}
 {-# FOREIGN GHC import qualified Data.Text #-}
