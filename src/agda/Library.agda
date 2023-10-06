@@ -149,7 +149,7 @@ module List where
       -- Update function for All
 
       data UpdateAt {r} {x} (R : Rel (P x) r)
-        : ∀ {xs} (x∈xs : x ∈ xs) (vs vs' : All P xs) → Set r where
+        : ∀ {xs} (x∈xs : x ∈ xs) (vs vs' : All P xs) → Set (a ⊔ p ⊔ r) where
 
         here : ∀{xs} {vs : All P xs} {v v' : P x}
           → R v v'
@@ -159,7 +159,7 @@ module List where
           → UpdateAt R x∈xs vs vs'
           → UpdateAt R (there x∈xs) (w ∷ vs) (w ∷ vs')
 
-      Update : ∀ {x xs} (v : P x) (x∈xs : x ∈ xs) (vs vs' : All P xs) → Set p
+      Update : ∀ {x xs} (v : P x) (x∈xs : x ∈ xs) (vs vs' : All P xs) → Set (a ⊔ p)
       Update v = UpdateAt (λ _ → (v ≡_))
 
 open List.All public using (here; there)
@@ -179,12 +179,12 @@ module _ {a p} {A : Set a} {P : A → Set p} where
     (vs : List.All P xs)
     (x∈xs : x ∈ xs)
     (v : P x)
-    (vs' : List.All P xs) → Set p
+    (vs' : List.All P xs) → Set (a ⊔ p)
   vs [ x∈xs ≔ v ]↝ vs' = List.All.Update v x∈xs vs vs'
 
   -- Membership in List.All  (In std-lib v1.2 as _[_]=_.)
 
-  data _↤_∈_ {x} (v : P x) : ∀ {xs} → x ∈ xs → List.All P xs → Set where
+  data _↤_∈_ {x} (v : P x) : ∀ {xs} → x ∈ xs → List.All P xs → Set (a ⊔ p) where
 
     here  : ∀ {xs} {vs : List.All P xs}
       → v ↤ here refl ∈ (v ∷ vs)
@@ -195,7 +195,7 @@ module _ {a p} {A : Set a} {P : A → Set p} where
 
   -- This is how we want to write it:
 
-  _↦_∈_ : ∀ {x xs} → x ∈ xs → P x → List.All P xs → Set
+  _↦_∈_ : ∀ {x xs} → x ∈ xs → P x → List.All P xs → Set (a ⊔ p)
   x ↦ v ∈ vs = v ↤ x ∈ vs
 
 -- Non-dependent association lists
@@ -228,7 +228,7 @@ module AssocList where
 
     -- ↦ v ∉ vs  means nothing points to v in vs.
 
-    ↦_∉_ : ∀{xs} → B → AssocList B xs → Set a
+    ↦_∉_ : ∀{xs} → B → AssocList B xs → Set (a ⊔ b)
     ↦_∉_ {xs} v vs = ∀{x : A} {x∈xs : x ∈ xs} → ¬ (x∈xs ↦ v ∈ vs)
 
     -- If nothing points to v we can cons it to a unique association list.

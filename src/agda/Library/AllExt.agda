@@ -19,12 +19,12 @@ private
 
 -- Insertion of elements into a List.All
 
-data AllExt {ℓp} (P : A → Set ℓp) : (τ : xs ⊆ ys) → Set ℓp where
+data AllExt {ℓp} (P : A → Set ℓp) : (τ : xs ⊆ ys) → Set (ℓa ⊔ ℓp) where
   []   : AllExt P []
   lift : AllExt P τ → AllExt P (refl {x = a} ∷ τ)
   _∷_  : P a → AllExt P τ → AllExt P (a ∷ʳ τ)
 
-record AllExtPushout {ℓp} (P : A → Set ℓp) (rpo : RawPushout τ σ) : Set ℓp where
+record AllExtPushout {ℓp} (P : A → Set ℓp) (rpo : RawPushout τ σ) : Set (ℓa ⊔ ℓp) where
   field
     legExt₁ : AllExt P (leg₁ rpo)
     legExt₂ : AllExt P (leg₂ rpo)
