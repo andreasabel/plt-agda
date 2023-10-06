@@ -239,7 +239,6 @@ module CheckExpressions {Σ : Sig} {Γ : Cxt} (ξ : TCEnv Σ Γ) where
   Infer` = M (∃ λ (t : Ty)  → Exp` t)
 
   mutual
-    {-# TERMINATING #-}
 
     -- Type inference.
 
