@@ -36,7 +36,7 @@ open IO public
 
 module Run (runCmd : (c : Command) → OS (Response c)) where
 
-  open IO.Primitive using (return; _>>=_)
+  open IO.Primitive using (_>>=_) renaming (pure to return)
 
   {-# TERMINATING #-}
   runIO : ∀ {A : Set} → IO ∞ A → OS A

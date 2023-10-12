@@ -406,11 +406,11 @@ module ErrorMonad {e} {E : Set e} where
   catchError (fail e) h = h e
   catchError (ok a)   h = ok a
 
-open import Category.Functor     using (RawFunctor)
-open import Category.Applicative using (RawApplicative)
+open import Effect.Functor     using (RawFunctor)
+open import Effect.Applicative using (RawApplicative)
 
 module IOFunctor where
-  open import IO.Primitive public using (return; _>>=_)
+  open import IO.Primitive public using (_>>=_) renaming (pure to return)
 
   infixl 1 _>>_
 

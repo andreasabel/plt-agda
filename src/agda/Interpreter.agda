@@ -410,7 +410,7 @@ evalProgram prg = _ IOT.<$> callFun (theMain prg) []
 
 module RunIO where
 
-  open import IO.Primitive using (return; _>>=_)
+  open import IO.Primitive using (_>>=_) renaming (pure to return)
 
   runCmd : (c : Command) → OS (Response c)
   runCmd cReadInt         = readInt
