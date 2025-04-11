@@ -57,7 +57,7 @@ printError = λ where
   duplicateDefinition    → "duplicate definition"
   duplicateParameter     → "duplicate parameter"
   noMain                 → "main function missing"
-  mainHasParameters      → "the main function may not have expect parameters"
+  mainHasParameters      → "the main function may not have parameters"
   mainNoReturnInt        → "the main function must return int"
 
 -- Names as coming from the abstract syntax are just strings.
@@ -120,7 +120,9 @@ record TCSig (Σ : Sig) : Set where
     theSig         : NameDecorated {FunType} Σ
     noClashBuiltin :
       ∀ {x} {ft : FunType} {f : ft ∈ Σ} {b : ∃ Builtin} {b∈ : b ∈ builtins}
-      (p : f ↦ x ∈ scope theSig) (q : b∈ ↦ x ∈ scope builtinSig) → ⊥
+      (p : f  ↦ x ∈ scope theSig)
+      (q : b∈ ↦ x ∈ scope builtinSig)
+      → ⊥
 open TCSig
 
 -- The empty signature is clash-free.
