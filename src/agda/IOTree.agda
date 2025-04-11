@@ -38,7 +38,7 @@ module Run (runCmd : (c : Command) → OS (Response c)) where
 
   open IO.Primitive using (_>>=_) renaming (pure to return)
 
-  {-# TERMINATING #-}
+  {-# NON_TERMINATING #-}
   runIO : ∀ {A : Set} → IO ∞ A → OS A
   runIO m = case m .force of λ where
     (return' a) → return a

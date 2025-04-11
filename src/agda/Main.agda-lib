@@ -1,2 +1,3 @@
 depend: standard-library
 include: . ../haskell
+flags: --sized-types

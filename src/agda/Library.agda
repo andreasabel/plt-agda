@@ -1,5 +1,7 @@
 -- Imports from the standard library and additional Haskell bindings.
 
+{-# OPTIONS -WnoUserWarning #-} -- Turn off deprecations warnings from std-lib v2.0
+
 module Library where
 
 open import Agda.Builtin.Float public using (Float) renaming
