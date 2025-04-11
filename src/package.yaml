@@ -6,12 +6,15 @@ author:    Andreas Abel <andreas.abel@gu.se>
 category:  Compiler
 
 # hpack version
-spec-version: 0.35
+# spec-version: 0.35
 
 tested-with:
-  - GHC == 9.6.1
-  - GHC == 9.4.4
-  - GHC == 9.2.7
+  - GHC == 9.12.2
+  - GHC == 9.10.1
+  - GHC == 9.8.4
+  - GHC == 9.6.7
+  - GHC == 9.4.8
+  - GHC == 9.2.8
   - GHC == 9.0.2
   - GHC == 8.10.7
   - GHC == 8.8.4
