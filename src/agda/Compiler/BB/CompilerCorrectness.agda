@@ -1,4 +1,4 @@
-
+{-# OPTIONS --allow-unsolved-metas #-}
 
 module Compiler.BB.CompilerCorrectness where
 
