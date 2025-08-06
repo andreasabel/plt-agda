@@ -13,11 +13,11 @@
 
 module IOTree {c} {r} (Command : Set c) (Response : Command → Set r) where
 
-open import Level        using (_⊔_)
-open import Size         using (Size; Size<_; ↑_; ∞)
-open import Data.Unit    using (⊤)
-open import Function     using (_∘_; case_of_)
-open import IO.Primitive using () renaming (IO to OS)
+open import Level             using (_⊔_)
+open import Size              using (Size; Size<_; ↑_; ∞)
+open import Data.Unit         using (⊤)
+open import Function          using (_∘_; case_of_)
+open import IO.Primitive.Core using () renaming (IO to OS)
 
 mutual
   record IO (i : Size) {a} (A : Set a) : Set (a ⊔ c ⊔ r) where
@@ -36,7 +36,7 @@ open IO public
 
 module Run (runCmd : (c : Command) → OS (Response c)) where
 
-  open IO.Primitive using (_>>=_) renaming (pure to return)
+  open IO.Primitive.Core using (_>>=_) renaming (pure to return)
 
   {-# NON_TERMINATING #-}
   runIO : ∀ {A : Set} → IO ∞ A → OS A

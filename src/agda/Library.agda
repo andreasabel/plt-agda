@@ -1,7 +1,5 @@
 -- Imports from the standard library and additional Haskell bindings.
 
-{-# OPTIONS -WnoUserWarning #-} -- Turn off deprecations warnings from std-lib v2.0
-
 module Library where
 
 open import Agda.Builtin.Float public using (Float) renaming
@@ -35,7 +33,7 @@ open import Data.Unit.Base     public using (⊤)
 open import Function           public using (id; _∘_; _∘′_; _$_; case_of_)
 open import Level              public using (Level; _⊔_)
 
-open import IO.Primitive       public using (IO)
+open import IO.Primitive.Core  public using (IO)
 
 open import Relation.Binary    public using (Decidable; Rel)
 open import Relation.Nullary   public using (¬_; Dec; yes; no)
@@ -102,9 +100,10 @@ module Integer where
 -- Lists.
 
 module List where
-  open import Data.List.Base               public using ([_]; _++_; concat; map; foldl; foldr; reverse; sum; fromMaybe; intersperse)
+  open import Data.List.Base               public using ([_]; _++_; concat; map; foldl; foldr; reverse; fromMaybe; intersperse)
   open import Data.List.Relation.Unary.All public using (All; []; _∷_) hiding (module All)
-  open import Data.List.Categorical        public using (module TraversableM)
+  open import Data.List.Effectful          public using (module TraversableM)
+  open import Data.Nat.ListAction          public using (sum)  -- std-lib v2.3
 
   module Any where
 
@@ -412,7 +411,7 @@ open import Effect.Functor     using (RawFunctor)
 open import Effect.Applicative using (RawApplicative)
 
 module IOFunctor where
-  open import IO.Primitive public using (_>>=_) renaming (pure to return)
+  open import IO.Primitive.Core public using (_>>=_) renaming (pure to return)
 
   infixl 1 _>>_
 
